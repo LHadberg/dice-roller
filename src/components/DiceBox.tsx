@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Text, Group, ActionIcon, Center, Loader, Menu, Drawer, Transition, SimpleGrid, Alert, Stack } from '@mantine/core';
+import { Button, Text, Group, ActionIcon, Center, Loader, Menu, Drawer, Transition, SimpleGrid, Alert, Stack, MantineProvider } from '@mantine/core';
 import DiceBox from '@3d-dice/dice-box';
 import { Action, RollType, DiceResult, D20Result, DiceRollResult } from '../types/types';
 import { IconChevronDown, IconChevronLeft, IconChevronRight, IconSettings, IconCheck, IconX } from '@tabler/icons-react';
@@ -162,17 +162,6 @@ const DiceBoxComponent: React.FC<DiceBoxProps> = ({ configuration, toggleShowDic
 			});
 		}
 	}, [physicsConfig, visualConfig]);
-
-	// const detectPageScroll = () => {
-	// 	console.debug('You have no power here!');
-	// };
-
-	// React.useEffect(() => {
-	// 	window.removeEventListener('scroll', detectPageScroll);
-	// 	return () => {
-	// 		window.addEventListener('scroll', detectPageScroll);
-	// 	};
-	// }, []);
 
 	const performActionRoll = async (action: Action, rollType: RollType = 'normal') => {
 		setShowActions(false);
@@ -400,7 +389,7 @@ const DiceBoxComponent: React.FC<DiceBoxProps> = ({ configuration, toggleShowDic
 					root: {
 						position: 'absolute',
 						height: '100%',
-					  },
+					},
 					body: {
 						padding: 0,
 					},

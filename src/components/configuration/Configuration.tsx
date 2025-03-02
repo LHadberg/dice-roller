@@ -4,14 +4,16 @@ import ActionsConfig from './ActionsConfig';
 import PhysicsConfig from './PhysicsConfig';
 import VisualsConfig from './VisualsConfig';
 import { IconDiceFilled } from '@tabler/icons-react';
-import { LocalStorageConfigurationReturn } from '../../hooks/useLocalStorageConfiguration';
+import { useLocalStorageConfiguration } from '../../hooks/useLocalStorageConfiguration';
+import { defaultConfigs } from '../../constants/defaultConfiguration';
 
 export interface ConfigurationProps {
-	configuration: LocalStorageConfigurationReturn;
 	toggleShowDiceBox: (value?: React.SetStateAction<boolean> | undefined) => void;
 }
 
-export const Configuration: React.FC<ConfigurationProps> = ({ configuration, toggleShowDiceBox }) => {
+export const Configuration: React.FC<ConfigurationProps> = ({ toggleShowDiceBox }) => {
+	const configuration = useLocalStorageConfiguration(defaultConfigs);
+
 	console.log('Configuration Rendering');
 	const { stats, actions, physicsConfig, visualConfig, handleStatsUpdate, handleActionsUpdate, handlePhysicsUpdate, handleVisualsUpdate } = configuration;
 	const tabs = {
@@ -21,7 +23,12 @@ export const Configuration: React.FC<ConfigurationProps> = ({ configuration, tog
 		visuals: { key: 'visuals', label: 'Visuals' },
 	};
 	return (
-		<div style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', background: 'white' }}>
+		<div
+			onClick={(e) => {
+				e.stopPropagation();
+			}}
+			style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', background: 'white' }}
+		>
 			<Tabs
 				styles={{
 					root: { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' },
@@ -29,22 +36,6 @@ export const Configuration: React.FC<ConfigurationProps> = ({ configuration, tog
 						maxWidth: 'calc(100vw - 2rem)',
 						overflowY: 'auto',
 						flex: 1,
-						// msOverflowStyle: 'none', // IE and Edge
-						// scrollbarWidth: 'none', // Firefox
-						// '&::-webkit-scrollbar': {
-						// 	display: 'none', // Chrome, Safari, Opera
-						// },
-						// position: 'relative',
-						// '&::after': {
-						// 	content: '""',
-						// 	position: 'absolute',
-						// 	bottom: 0,
-						// 	left: 0,
-						// 	right: 0,
-						// 	height: '50px',
-						// 	background: 'linear-gradient(transparent, white)',
-						// 	pointerEvents: 'none',
-						// },
 					},
 				}}
 				defaultValue={tabs.stats.key}
