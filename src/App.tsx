@@ -1,58 +1,103 @@
 import * as THREE from 'three';
 
-import { Html, OrbitControls, PerspectiveCamera } from '@react-three/drei';
-import React, { useRef, useEffect, useState } from 'react';
+import { Html, PerspectiveCamera } from '@react-three/drei';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSpring, animated } from '@react-spring/three';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useLoader, useThree } from '@react-three/fiber';
 
 import './App.css';
 import { Configuration } from './components/configuration/Configuration';
 import { useLocalStorageConfiguration } from './hooks/useLocalStorageConfiguration';
 import { defaultConfigs } from './constants/defaultConfiguration';
 import { MantineProvider } from '@mantine/core';
-import DiceBox from '@3d-dice/dice-box';
 import DiceBoxComponent from './components/DiceBox';
 
 interface DiceBoxContainerProps {
 	onClick: () => void;
 }
 const Thing: React.FC<DiceBoxContainerProps> = ({ onClick }) => {
-	const configuration = useLocalStorageConfiguration(defaultConfigs);
-	const { viewport, size } = useThree();
-
 	console.log('Thing Rendering');
 	const ref = useRef();
-	const viewportWidth = viewport.width; // - 0.5
-	const viewportHeight = viewport.height; // - 0.5
+	const {
+		viewport: { width: viewportWidth, height: viewportHeight },
+		size,
+	} = useThree();
+	const configuration = useLocalStorageConfiguration(defaultConfigs);
 	const wallThickness = 0.5;
+
+	const wallMeshHorizontal = useLoader(THREE.TextureLoader, '/src/assets/textures/wall/horizontal/wood.jpg');
+	const wallMeshVertical = useLoader(THREE.TextureLoader, '/src/assets/textures/wall/vertical/wood.jpg');
+	const backgroundMesh = useLoader(THREE.TextureLoader, '/src/assets/textures/background/cardboard.jpg');
+
+	useEffect(() => {
+		// Handle horizontal wall textures (top and bottom)
+		if (wallMeshHorizontal) {
+			wallMeshHorizontal.wrapS = wallMeshHorizontal.wrapT = THREE.RepeatWrapping;
+
+			// Set a consistent real-world scale (e.g. 1 unit = 1 meter)
+			const textureScale = 1; // How many texture repeats per unit
+
+			// Width is much larger than height for horizontal walls
+			// We want the texture to repeat naturally across the width
+			wallMeshHorizontal.repeat.set(viewportWidth * textureScale, 0.5 * textureScale);
+		}
+
+		// Handle vertical wall textures (left and right)
+		if (wallMeshVertical) {
+			wallMeshVertical.wrapS = wallMeshVertical.wrapT = THREE.RepeatWrapping;
+
+			// Set a consistent real-world scale
+			const textureScale = 1; // How many texture repeats per unit
+
+			// Height is much larger than width for vertical walls
+			// We want the texture to repeat naturally across the height
+			wallMeshVertical.repeat.set(0.5 * textureScale, viewportHeight * textureScale);
+		}
+
+		// Handle background texture
+		if (backgroundMesh) {
+			backgroundMesh.wrapS = backgroundMesh.wrapT = THREE.RepeatWrapping;
+
+			// Set a consistent scale for the background
+			// This should match the aspect ratio of your viewport
+			backgroundMesh.repeat.set(
+				1, // Single repeat horizontally
+				1 // Single repeat vertically
+			);
+		}
+	}, [wallMeshHorizontal, wallMeshVertical, backgroundMesh, viewportHeight, viewportWidth]);
+
+	const wallMetalness = 0.2;
+	const wallRoughness = 0.5;
+
 	return (
 		<group onClick={onClick}>
 			{/* Top Wall */}
 			<mesh position={[0, (viewportHeight - wallThickness) / 2, 0.5]}>
 				<boxBufferGeometry attach='geometry' args={[viewportWidth, 0.5, wallThickness]} />
-				<meshStandardMaterial color='blue' />
+				<meshStandardMaterial map={wallMeshHorizontal} metalness={wallMetalness} roughness={wallRoughness} />
 			</mesh>
 			{/* Left Wall */}
 			<mesh position={[-(viewportWidth - wallThickness) / 2, 0, 0.5]}>
 				<boxBufferGeometry attach='geometry' args={[0.5, viewportHeight, wallThickness]} />
-				<meshStandardMaterial color='blue' />
+				<meshStandardMaterial map={wallMeshVertical} metalness={wallMetalness} roughness={wallRoughness} />
 			</mesh>
 			{/* Right Wall */}
 			<mesh position={[(viewportWidth - wallThickness) / 2, 0, 0.5]}>
 				<boxBufferGeometry attach='geometry' args={[0.5, viewportHeight, wallThickness]} />
-				<meshStandardMaterial color='blue' />
+				<meshStandardMaterial map={wallMeshVertical} metalness={wallMetalness} roughness={wallRoughness} />
 			</mesh>
 			{/* Bottom Wall */}
 			<mesh position={[0, -(viewportHeight - wallThickness) / 2, 0.5]}>
 				<boxBufferGeometry attach='geometry' args={[viewportWidth, 0.5, wallThickness]} />
-				<meshStandardMaterial color='blue' />
+				<meshStandardMaterial map={wallMeshHorizontal} metalness={wallMetalness} roughness={wallRoughness} />
 			</mesh>
 			{/* Background */}
 			<mesh ref={ref as any} scale={[viewportWidth, viewportHeight, 1]}>
 				<boxBufferGeometry attach='geometry' args={[1, 1, 0.1]} />
-				<meshStandardMaterial color='red' />
-				<Html transform occlude distanceFactor={1} scale={[0.4, 0.4, 1]} rotation={[0, 0, 0]} position={[0, 0, 1]}>
-					{/* <div>hej</div> */}
+				<meshStandardMaterial map={backgroundMesh} roughness={0.7} metalness={0.8} />
+
+				{/* <Html transform occlude distanceFactor={1} scale={[0.4, 0.4, 1]} rotation={[0, 0, 0]} position={[0, 0, 1]}>
 					<div
 						id='pleb'
 						style={{
@@ -66,7 +111,7 @@ const Thing: React.FC<DiceBoxContainerProps> = ({ onClick }) => {
 							<DiceBoxComponent configuration={configuration} toggleShowDiceBox={onClick} />
 						</MantineProvider>
 					</div>
-				</Html>
+				</Html> */}
 			</mesh>
 		</group>
 	);
@@ -74,7 +119,7 @@ const Thing: React.FC<DiceBoxContainerProps> = ({ onClick }) => {
 
 const Diceapp = () => {
 	console.log('Diceapp Rendering');
-	const { viewport, size } = useThree();
+	const { size } = useThree();
 	console.debug('🚀 ~ Diceapp ~ size:', size);
 
 	const cameraRef = useRef<THREE.PerspectiveCamera>();
@@ -126,7 +171,7 @@ const Diceapp = () => {
 			<Thing onClick={toggleCamera} />
 
 			<ambientLight />
-			<pointLight position={[1, 4, 1]} intensity={1.6} />
+			<pointLight position={[7, 7, 9]} intensity={0.8} />
 			<Html transform occlude distanceFactor={10} scale={[0.4, 0.4, 1]} rotation={[0, Math.PI, 0]} position={[0, 0, -0.1]}>
 				<div
 					id='pleb'
