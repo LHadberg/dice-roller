@@ -27,15 +27,31 @@ export const Configuration: React.FC<ConfigurationProps> = ({ toggleShowDiceBox 
 			onClick={(e) => {
 				e.stopPropagation();
 			}}
-			style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', background: 'white' }}
+			style={{ 
+				height: '100%', 
+				width: '100%', 
+				display: 'flex', 
+				flexDirection: 'column', 
+				background: 'white',
+				maxHeight: '100%', // Add max height constraint
+				overflow: 'hidden' // Prevent overflow
+			}}
 		>
 			<Tabs
 				styles={{
-					root: { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' },
+					root: { 
+						display: 'flex', 
+						flexDirection: 'column', 
+						flex: 1, 
+						overflow: 'hidden',
+						maxHeight: 'calc(100% - 80px)' // Account for action bar height
+					},
 					panel: {
-						maxWidth: 'calc(100vw - 2rem)',
+						maxWidth: '100%', // Use relative width instead of viewport units
 						overflowY: 'auto',
+						overflowX: 'hidden', // Prevent horizontal scrolling
 						flex: 1,
+						padding: '0 1rem', // Add horizontal padding here instead
 					},
 				}}
 				defaultValue={tabs.stats.key}
@@ -73,6 +89,8 @@ export const Configuration: React.FC<ConfigurationProps> = ({ toggleShowDiceBox 
 					zIndex: 10,
 					display: 'flex',
 					justifyContent: 'flex-end',
+					height: '80px', // Fixed height for the action bar
+					boxSizing: 'border-box', // Ensure padding is included in height calculation
 				}}
 			>
 				<ActionIcon variant='light' size={48} onClick={() => toggleShowDiceBox()} color='blue'>

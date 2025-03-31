@@ -314,7 +314,7 @@ const DiceBoxComponent: React.FC<DiceBoxProps> = ({ configuration, toggleShowDic
 	};
 
 	return (
-		<div id={'dicebox-container'} className={styles.container}>
+		<div id={'dicebox-container'} className={styles.container} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
 			{/* Header */}
 			<div className={`${styles.diffusedBackground} ${styles.header}`}>
 				<div className={styles.headerContent}>
