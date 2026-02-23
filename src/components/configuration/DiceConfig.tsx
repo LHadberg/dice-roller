@@ -18,6 +18,7 @@ const DiceConfig: React.FC<DiceConfigProps> = ({ selections, onUpdate }) => {
 
   return (
     <Stack gap="md">
+      {/* TODO Parametize labels for localization */}
       <Text size="xl" fw={700}>
         Select Dice
       </Text>
@@ -28,7 +29,7 @@ const DiceConfig: React.FC<DiceConfigProps> = ({ selections, onUpdate }) => {
           value={count}
           min={0}
           max={128}
-          onChange={(value) => handleUpdate(type as keyof DiceSelections, Number(value) || 0)} 
+          onChange={(value) => handleUpdate(type as keyof DiceSelections, Number(value) || 0)}
         />
       ))}
     </Stack>

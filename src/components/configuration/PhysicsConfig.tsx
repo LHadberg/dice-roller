@@ -18,6 +18,7 @@ const PhysicsConfig: React.FC<PhysicsConfigProps> = ({ config, onUpdate }) => {
 
   return (
     <Stack gap="md">
+      {/* TODO Parametize labels for localization */}
       <Text size="xl" fw={700}>
         Physics Configuration
       </Text>

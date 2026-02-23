@@ -27,11 +27,11 @@ export const Configuration: React.FC<ConfigurationProps> = ({ toggleShowDiceBox 
 			onClick={(e) => {
 				e.stopPropagation();
 			}}
-			style={{ 
-				height: '100%', 
-				width: '100%', 
-				display: 'flex', 
-				flexDirection: 'column', 
+			style={{
+				height: '100%',
+				width: '100%',
+				display: 'flex',
+				flexDirection: 'column',
 				background: 'white',
 				maxHeight: '100%', // Add max height constraint
 				overflow: 'hidden' // Prevent overflow
@@ -39,20 +39,21 @@ export const Configuration: React.FC<ConfigurationProps> = ({ toggleShowDiceBox 
 		>
 			<Tabs
 				styles={{
-					root: { 
-						display: 'flex', 
-						flexDirection: 'column', 
-						flex: 1, 
+					root: {
+						display: 'flex',
+						flexDirection: 'column',
+						flex: 1,
 						overflow: 'hidden',
-						maxHeight: 'calc(100% - 80px)' // Account for action bar height
+						maxHeight: 'calc(100% - 80px)'
 					},
 					panel: {
-						maxWidth: '100%', // Use relative width instead of viewport units
+						maxWidth: '100%',
+
 						overflowY: 'auto',
-						overflowX: 'hidden', // Prevent horizontal scrolling
+						overflowX: 'hidden',
 						flex: 1,
-						padding: '0 1rem', // Add horizontal padding here instead
-					},
+						padding: '0 1rem'
+					}
 				}}
 				defaultValue={tabs.stats.key}
 				p={'1rem'}

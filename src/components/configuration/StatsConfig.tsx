@@ -39,6 +39,7 @@ const StatsConfig: React.FC<StatsConfigProps> = ({ stats, onUpdate }) => {
                 {statKey}
               </Text>
               <Text size="sm" c="dimmed">
+                {/* TODO: Add localization */}
                 Value: {stats[statKey].value} (Modifier: {stats[statKey].modifier >= 0 ? '+' : ''}{stats[statKey].modifier})
               </Text>
             </div>

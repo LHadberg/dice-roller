@@ -17,7 +17,7 @@ interface DiceBoxContainerProps {
 	configuration: ReturnType<typeof useLocalStorageConfiguration>;
 }
 
-const Thing: React.FC<DiceBoxContainerProps> = ({ onClick, configuration }) => {
+const Thing: React.FC<DiceBoxContainerProps> = ({ }) => {
 	console.log('Thing Rendering');
 	const ref = useRef();
 	const {
@@ -73,7 +73,7 @@ const Thing: React.FC<DiceBoxContainerProps> = ({ onClick, configuration }) => {
 
 	return (
 		// <group onClick={onClick}>
-		<group onClick={onClick}>
+		<group>
 			{/* Top Wall */}
 			<mesh position={[0, (viewportHeight - wallThickness) / 2, 0.5]}>
 				<boxGeometry attach='geometry' args={[viewportWidth, 0.5, wallThickness]} />
@@ -112,7 +112,6 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 	const { size } = useThree();
 	console.debug('🚀 ~ Diceapp ~ size:', size);
 
-	const cameraRef = useRef<THREE.PerspectiveCamera>();
 	const [isRotated, setIsRotated] = useState(false);
 	const [isZoomedOut, setIsZoomedOut] = useState(false);
 	const [showDiceBox, setShowDiceBox] = useState(true);
@@ -134,9 +133,9 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 		onResolve: () => {
 			setIsZoomedOut(false);
 		},
-		onChange: (a, b, c) => {
-			// console.log(a, b, c)
-		},
+		// onChange: (a, b, c) => {
+		// 	console.log(a, b, c)
+		// },
 	});
 
 	const { position } = useSpring({
@@ -154,13 +153,13 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 		const timer = setTimeout(() => {
 			setDiceBoxMounted(true);
 		}, 500);
-		
+
 		return () => clearTimeout(timer);
 	}, []);
 
 	const toggleCamera = () => {
 		setIsRotated(!isRotated);
-		
+
 		// Add a small delay before toggling the components to allow for animation
 		setTimeout(() => {
 			setShowDiceBox(!showDiceBox);
@@ -169,10 +168,10 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 	};
 
 	const toggleShowDiceBox = (value?: React.SetStateAction<boolean> | undefined) => {
-		const newValue = value !== undefined ? 
-			(typeof value === 'function' ? (value as Function)(showDiceBox) : value) : 
+		const newValue = value !== undefined ?
+			(typeof value === 'function' ? (value as Function)(showDiceBox) : value) :
 			!showDiceBox;
-		
+
 		// If we're currently on the DiceBox side, trigger the camera rotation
 		if (!isRotated) {
 			toggleCamera();
@@ -187,20 +186,20 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 		<>
 			<animated.group rotation-y={rotation}>
 				<animated.group position-z={position}>
-					<PerspectiveCamera ref={cameraRef as any} makeDefault position={[0, 0, 10]} lookAt={() => [0, 0, 10]} />
+					<PerspectiveCamera makeDefault position={[0, 0, 10]} lookAt={() => [0, 0, 10]} />
 				</animated.group>
 			</animated.group>
-			<Thing 
-				onClick={toggleCamera} 
-				configuration={configuration} 
+			<Thing
+				onClick={toggleCamera}
+				configuration={configuration}
 			/>
 
 			<ambientLight />
 			<pointLight position={[7, 7, 9]} intensity={0.8} />
-			
+
 			{/* DiceBox Component (frontside) */}
 			{showDiceBox && diceBoxMounted && !isRotated && (
-				<Html transform occlude distanceFactor={10} scale={[0.4, 0.4, 1]} rotation={[0, 0, 0]} position={[0, 0, 1]}>
+				<Html transform occlude distanceFactor={10} scale={[0.4, 0.4, 1]} rotation={[0, 0, 0]} position={[0, 0, 0.2]}>
 					<div
 						style={{
 							width: size.width,
@@ -209,15 +208,15 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 						}}
 					>
 						<MantineProvider>
-							<DiceBoxComponent 
-								configuration={configuration} 
-								toggleShowDiceBox={toggleShowDiceBox} 
+							<DiceBoxComponent
+								configuration={configuration}
+								toggleShowDiceBox={toggleShowDiceBox}
 							/>
 						</MantineProvider>
 					</div>
 				</Html>
 			)}
-			
+
 			{/* Configuration Panel (backside) */}
 			{showConfiguration && (
 				<Html transform occlude distanceFactor={10} scale={[0.4, 0.4, 1]} rotation={[0, Math.PI, 0]} position={[0, 0, -0.1]}>
@@ -240,7 +239,7 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 
 export const DiceAppWrapper = () => {
 	const configuration = useLocalStorageConfiguration(defaultConfigs);
-	
+
 	return (
 		<Canvas>
 			<DiceApp configuration={configuration} />

@@ -19,6 +19,9 @@ const ActionsConfig: React.FC<ActionsConfigProps> = ({ actions, onUpdate }) => {
     { value: 'd20', label: 'D20' },
   ];
 
+  /**
+   * TODO: Add localization for stat labels
+   */
   const statOptions = [
     { value: 'strength', label: 'Strength' },
     { value: 'dexterity', label: 'Dexterity' },
@@ -64,10 +67,11 @@ const ActionsConfig: React.FC<ActionsConfigProps> = ({ actions, onUpdate }) => {
   };
 
   return (
-    <Stack gap="md" styles={{root: {height: '100%'}}}>
+    <Stack gap="md" styles={{ root: { height: '100%' } }}>
       <Group justify="space-between">
         <Text size="xl" fw={700}>Actions</Text>
         <Button onClick={addNewAction} leftSection={<IconPlus size={16} />}>
+          {/* TODO: Add localization */}
           Add Action
         </Button>
       </Group>
@@ -145,6 +149,7 @@ const ActionsConfig: React.FC<ActionsConfigProps> = ({ actions, onUpdate }) => {
               onClick={() => addDamageDie(actionIndex)}
               leftSection={<IconPlus size={16} />}
             >
+              {/* TODO: Add localization */}
               Add Damage Die
             </Button>
           </Stack>

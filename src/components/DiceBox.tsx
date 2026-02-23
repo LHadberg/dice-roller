@@ -1,487 +1,351 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Button, Text, Group, ActionIcon, Center, Loader, Menu, Drawer, Transition, SimpleGrid, Alert, Stack, MantineProvider } from '@mantine/core';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+    Button,
+    Text,
+    Group,
+    ActionIcon,
+    Center,
+    Loader,
+    Drawer,
+    Transition,
+    SimpleGrid,
+} from '@mantine/core';
 import DiceBox from '@3d-dice/dice-box';
-import { Action, RollType, DiceResult, D20Result, DiceRollResult } from '../types/types';
-import { IconChevronDown, IconChevronLeft, IconChevronRight, IconSettings, IconCheck, IconX } from '@tabler/icons-react';
+import { Action, DiceResult } from '../types/types';
+import {
+    IconChevronLeft,
+    IconChevronRight,
+    IconSettings,
+} from '@tabler/icons-react';
 import styles from '../styles/DiceBox.module.css';
 import { LocalStorageConfigurationReturn } from '../hooks/useLocalStorageConfiguration';
 
-export interface DiceBoxProps {
-	configuration: LocalStorageConfigurationReturn;
-	toggleShowDiceBox: (value?: React.SetStateAction<boolean> | undefined) => void;
+declare global {
+    interface Window {
+        __DICEBOX_AMMO_INIT__?: boolean;
+    }
+}
+if (typeof window !== "undefined" && !window.__DICEBOX_AMMO_INIT__) {
+    window.__DICEBOX_AMMO_INIT__ = false;
 }
 
-const DiceBoxComponent: React.FC<DiceBoxProps> = ({ configuration, toggleShowDiceBox }) => {
-	console.log('DiceBox Rendering');
-	const { stats, actions, physicsConfig, visualConfig } = configuration;
-	const [results, setResults] = useState<DiceResult[]>([]);
-	const [showResults, setShowResults] = useState<boolean>(false);
-	const [showActions, setShowActions] = useState<boolean>(false);
-	const [isLoading, setIsLoading] = useState(true);
-	const [displayTotal, setDisplayTotal] = useState<number>(0);
-	const [isRandomizing, setIsRandomizing] = useState<boolean>(false);
-	const [lastActionName, setLastActionName] = useState<string>('');
-	const [pendingAction, setPendingAction] = useState<Action | null>(null);
-	const [d20Result, setD20Result] = useState<D20Result | null>(null);
-	const [lastRolledAction, setLastRolledAction] = useState<Action | null>(null);
-	const [isDamageRoll, setIsDamageRoll] = useState(false);
 
-	const intervalRef = useRef<number>();
-	const diceBoxRef = useRef<InstanceType<typeof DiceBox> | null>(null);
-	const containerId = useRef(`dice-container-${Math.random().toString(36).substr(2, 9)}`);
-	const containerRef = useRef<HTMLDivElement>(null);
+export interface DiceBoxProps {
+    configuration: LocalStorageConfigurationReturn;
+    toggleShowDiceBox: () => void;
+}
 
-	useEffect(() => {
-		const currentRef = intervalRef.current;
-		return () => {
-			if (currentRef) {
-				window.clearInterval(currentRef);
-			}
-		};
-	}, []);
+const DiceBoxComponent: React.FC<DiceBoxProps> = ({
+    configuration,
+    toggleShowDiceBox,
+}) => {
+    const { actions, physicsConfig, visualConfig } = configuration;
 
-	const updateCanvasSize = () => {
-		if ((updateCanvasSize as any).isUpdating) return;
-		(updateCanvasSize as any).isUpdating = true;
+    // UI state
+    const [results, setResults] = useState<DiceResult[]>([]);
+    const [showActions, setShowActions] = useState(false);
+    const [showResults, setShowResults] = useState(false);
+    const [isRandomizing, setIsRandomizing] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [displayTotal, setDisplayTotal] = useState(0);
+    const [isDamageRoll, setIsDamageRollState] = useState(false);
 
-		const container = document.getElementById(containerId.current);
-		if (container) {
-			const canvas = container.querySelector('canvas');
-			if (canvas) {
-				canvas.style.width = '100%';
-				canvas.style.height = '100%';
-				requestAnimationFrame(() => {
-					window.dispatchEvent(new Event('resize'));
-					(updateCanvasSize as any).isUpdating = false;
-				});
-			} else {
-				(updateCanvasSize as any).isUpdating = false;
-			}
-		} else {
-			(updateCanvasSize as any).isUpdating = false;
-		}
-	};
+    // Refs for state and resources
+    const isDamageRollRef = useRef<boolean>(isDamageRoll);
+    const diceBoxRef = useRef<InstanceType<typeof DiceBox> | null>(null);
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const observerRef = useRef<ResizeObserver | null>(null);
+    const updatingRef = useRef<boolean>(false);
 
-	useEffect(() => {
-		const initializeDiceBox = async () => {
-			document.querySelectorAll('[id^="dice-container-"]').forEach((element) => {
-				if (element.id !== containerId.current) {
-					element.remove();
-				}
-			});
+    // Keep config in refs so initialization doesn't re-run if props change
+    const physicsRef = useRef(configuration.physicsConfig);
+    const visualRef = useRef(configuration.visualConfig);
+    physicsRef.current = physicsConfig;
+    visualRef.current = visualConfig;
 
-			await new Promise((resolve) => setTimeout(resolve, 1000));
+    const setIsDamageRoll = (v: boolean) => {
+        isDamageRollRef.current = v;
+        setIsDamageRollState(v);
+    };
 
-			const container = document.getElementById(containerId.current);
+    const containerId = useRef('dice-container-' + Math.random().toString(36).slice(2));
 
-			if (!container) {
-				console.error('Dice container not found', containerId.current);
-				return;
-			}
+    const updateCanvasSize = useCallback(() => {
+        if (updatingRef.current) return;
+        updatingRef.current = true;
 
-			if (!diceBoxRef.current) {
-				try {
-					const box = new DiceBox({
-						container: `#${containerId.current}`,
-						assetPath: '/assets/dice-box/',
-						theme: visualConfig.theme,
-						scale: 6,
-						offscreen: true,
-						gravity: physicsConfig.gravity,
-						mass: physicsConfig.mass,
-						friction: physicsConfig.friction,
-						restitution: physicsConfig.restitution,
-						linearDamping: physicsConfig.linearDamping,
-						angularDamping: physicsConfig.angularDamping,
-						themeColor: visualConfig.themeColor,
-					});
+        const container = document.getElementById(containerId.current);
+        if (!container) {
+            updatingRef.current = false;
+            return;
+        }
 
-					diceBoxRef.current = box;
+        const canvas = container.querySelector('canvas') as HTMLCanvasElement | null;
+        if (!canvas) {
+            updatingRef.current = false;
+            return;
+        }
 
-					await box.init();
-					console.log('Dice box initialized');
-					updateCanvasSize();
-					setIsLoading(false);
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
 
-					box.onRollComplete = (rollResults) => {
-						console.log('Roll results:', rollResults);
-						setIsRandomizing(false);
-						if (intervalRef.current) {
-							window.clearInterval(intervalRef.current);
-						}
-						const total = rollResults.reduce((acc: any, r: any) => acc + r.value, 0);
-						setDisplayTotal(total);
+        requestAnimationFrame(() => {
+            window.dispatchEvent(new Event('resize'));
+            updatingRef.current = false;
+        });
+    }, []);
 
-						// Only save results if it's not a damage roll from an action that required a hit
-						if (!isDamageRoll || (lastRolledAction && !lastRolledAction.requiresD20)) {
-							setResults(rollResults);
-						}
-					};
-				} catch (error) {
-					console.error('Failed to initialize dice box:', error);
-					setIsLoading(false);
-				}
-			}
-		};
+    // initializeDiceBox: runs once when container mounts. Captures configs from refs.
+    const initializeDiceBox = useCallback(async () => {
+        if (!containerRef.current) return;
 
-		const resizeObserver = new ResizeObserver(updateCanvasSize);
-		const container = document.getElementById(containerId.current);
-		if (container) {
-			resizeObserver.observe(container);
-		}
+        if (window.__DICEBOX_AMMO_INIT__ && diceBoxRef.current) {
+            return;
+        }
 
-		window.addEventListener('resize', updateCanvasSize);
+        if (diceBoxRef.current) return;
 
-		initializeDiceBox();
+        try {
+            const box = new DiceBox({
+                container: `#${containerId.current}`,
+                assetPath: '/assets/dice-box/',
+                theme: visualRef.current.theme,
+                themeColor: visualRef.current.themeColor,
+                scale: 6,
+                gravity: physicsRef.current.gravity,
+                mass: physicsRef.current.mass,
+                friction: physicsRef.current.friction,
+                restitution: physicsRef.current.restitution,
+                linearDamping: physicsRef.current.linearDamping,
+                angularDamping: physicsRef.current.angularDamping,
+                offscreen: true,
+            });
 
-		return () => {
-			if (diceBoxRef.current) {
-				try {
-					diceBoxRef.current.clear();
-					diceBoxRef.current = null;
-				} catch (error) {
-					console.error('Error during cleanup:', error);
-				}
-			}
-			resizeObserver.disconnect();
-			window.removeEventListener('resize', updateCanvasSize);
-		};
-	}, []);
+            diceBoxRef.current = box;
 
-	useEffect(() => {
-		if (diceBoxRef.current) {
-			diceBoxRef.current.updateConfig({
-				theme: visualConfig.theme,
-				themeColor: visualConfig.themeColor,
-				gravity: physicsConfig.gravity,
-				mass: physicsConfig.mass,
-				friction: physicsConfig.friction,
-				restitution: physicsConfig.restitution,
-				linearDamping: physicsConfig.linearDamping,
-				angularDamping: physicsConfig.angularDamping,
-			});
-		}
-	}, [physicsConfig, visualConfig]);
+            await box.init();
 
-	const performActionRoll = async (action: Action, rollType: RollType = 'normal') => {
-		setShowActions(false);
-		const diceBox = diceBoxRef.current;
-		if (!diceBox) return;
+            window.__DICEBOX_AMMO_INIT__ = true;
 
-		setLastActionName(action.name);
-		setLastRolledAction(action);
+            updateCanvasSize();
+            setIsLoading(false);
 
-		if (action.requiresD20) {
-			setIsDamageRoll(false);
-			const modifier = action.statModifier ? stats[action.statModifier].modifier : 0;
-			const rollNotation = rollType === 'normal' ? '1d20' : '2d20';
+            box.onRollComplete = (rollResults: any[]) => {
+                setIsRandomizing(false);
+                const total = rollResults.reduce((acc: number, r: { value: number }) => acc + r.value, 0);
+                setDisplayTotal(total);
+                if (!isDamageRollRef.current) setResults(rollResults);
+            };
 
-			setResults([]);
-			setIsRandomizing(true);
+            if (containerRef.current) {
+                observerRef.current = new ResizeObserver(updateCanvasSize);
+                observerRef.current.observe(containerRef.current);
+            }
+            window.addEventListener('resize', updateCanvasSize);
+        } catch (err) {
+            console.error('Failed to initialize dice box:', err);
+            setIsLoading(false);
+        }
+    }, [updateCanvasSize]);
 
-			try {
-				const attackResults = (await diceBox.roll([rollNotation])) as DiceRollResult[];
-				if (!Array.isArray(attackResults)) {
-					console.error('Invalid roll results structure:', attackResults);
-					return;
-				}
 
-				const rollValues = attackResults.map((r) => r.value);
-				let attackRoll: number;
+    // Ref-callback attached to the rendered div. Called exactly when DOM node mounts/unmounts.
+    const containerCallbackRef = useCallback(
+        (node: HTMLDivElement | null) => {
+            containerRef.current = node;
 
-				if (rollType === 'advantage') {
-					attackRoll = Math.max(...rollValues);
-				} else if (rollType === 'disadvantage') {
-					attackRoll = Math.min(...rollValues);
-				} else {
-					attackRoll = rollValues[0];
-				}
+            if (node && !diceBoxRef.current) {
+                // DOM node now exists — initialize dice box
+                initializeDiceBox();
+            }
+        },
+        [initializeDiceBox]
+    );
 
-				const totalAttack = attackRoll + modifier;
-				setDisplayTotal(totalAttack);
-				setD20Result({
-					rolls: rollValues,
-					finalValue: totalAttack,
-					modifier,
-					rollType,
-				});
-				setPendingAction(action);
+    // Single cleanup effect for unmount: clears dicebox, removes observers and listeners.
+    useEffect(() => {
+        return () => {
+            // Clear DiceBox instance
+            if (diceBoxRef.current) {
+                try {
+                    diceBoxRef.current.clear();
+                } catch (e) {
+                    console.error('Error clearing dice box on unmount:', e);
+                }
+                diceBoxRef.current = null;
+            }
 
-				setResults([
-					{
-						qty: 1,
-						value: totalAttack,
-						rolls: [
-							{
-								dieType: `d20 (${action.statModifier}: ${modifier >= 0 ? '+' : ''}${modifier})`,
-							},
-						],
-					},
-				]);
-			} catch (error) {
-				console.error('Error rolling attack dice:', error);
-				return;
-			}
-		} else {
-			// Handle damage roll directly
-			try {
-				setIsDamageRoll(true);
-				const damageNotations = action.damageDice.map((die) => `${die.quantity}${die.dieType}`);
-				if (damageNotations.length > 0) {
-					setResults([]);
-					setIsRandomizing(true);
-					await diceBox.roll(damageNotations);
-				}
-			} catch (error) {
-				console.error('Error rolling damage dice:', error);
-			}
-		}
-	};
+            // Disconnect ResizeObserver
+            if (observerRef.current) {
+                try {
+                    observerRef.current.disconnect();
+                } catch (e) {
+                    // ignore
+                }
+                observerRef.current = null;
+            }
 
-	const handleHitConfirmation = async (didHit: boolean) => {
-		const diceBox = diceBoxRef.current;
-		if (!pendingAction || !diceBox) {
-			return;
-		}
+            // Remove window resize listener
+            try {
+                window.removeEventListener('resize', updateCanvasSize);
+            } catch (e) {
+                // ignore
+            }
+        };
+    }, []);
 
-		setD20Result(null);
-		setPendingAction(null);
+    // ---------------------------
+    //  ROLL FUNCTIONS
+    // ---------------------------
 
-		if (!didHit) {
-			return;
-		}
+    const rollD20 = useCallback(async () => {
+        if (!diceBoxRef.current) return;
 
-		try {
-			setLastRolledAction(null);
-			setIsDamageRoll(true);
-			const damageNotations = pendingAction.damageDice.map((die) => `${die.quantity}${die.dieType}`);
-			if (damageNotations.length > 0) {
-				setResults([]);
-				await diceBox.roll(damageNotations);
-			}
-		} catch (error) {
-			console.error('Error rolling damage dice:', error);
-		}
-	};
+        setResults([]);
+        setIsRandomizing(true);
+        setIsDamageRoll(false);
 
-	const renderHitConfirmation = () => {
-		if (!d20Result || !pendingAction) return null;
+        try {
+            const r = await diceBoxRef.current.roll(['1d20']);
+            if (r && r[0]) {
+                setResults([{ qty: 1, value: r[0].value, rolls: [{ dieType: 'd20' }] }]);
+                setDisplayTotal(r[0].value);
+            }
+        } catch (e) {
+            console.error('Error during d20 roll:', e);
+            setIsRandomizing(false);
+        }
+    }, []);
 
-		const rollText = d20Result.rolls.length > 1 ? `Rolled ${d20Result.rolls.join(' and ')}` : `Rolled ${d20Result.rolls[0]}`;
+    const reroll = useCallback(async () => {
+        if (!diceBoxRef.current || results.length === 0) return;
 
-		const modifierText =
-			d20Result.modifier !== 0
-				? ` with ${d20Result.modifier > 0 ? '+' : ''}${d20Result.modifier} modifier for a total of ${d20Result.finalValue}`
-				: ` for a total of ${d20Result.finalValue}`;
+        const notations = results.map((r) => `${r.qty}${r.rolls[0].dieType}`);
+        setResults([]);
+        setIsRandomizing(true);
 
-		return (
-			<Alert
-				title='Did I Hit...?'
-				variant='light'
-				color='blue'
-				style={{
-					position: 'absolute',
-					top: '50%',
-					left: '50%',
-					transform: 'translate(-50%, -50%)',
-					zIndex: 1000,
-					maxWidth: '400px',
-					width: '90%',
-				}}
-			>
-				<Stack gap='md'>
-					<Text>
-						{rollText}
-						{modifierText}
-						{d20Result.rolls.length > 1 && (
-							<Text component='span' fw={700}>
-								{' '}
-								= {d20Result.finalValue}
-							</Text>
-						)}
-					</Text>
-					<Group justify='flex-end'>
-						<Button variant='filled' color='red' leftSection={<IconX size={16} />} onClick={() => handleHitConfirmation(false)}>
-							No
-						</Button>
-						<Button variant='filled' color='green' leftSection={<IconCheck size={16} />} onClick={() => handleHitConfirmation(true)}>
-							Yes
-						</Button>
-					</Group>
-				</Stack>
-			</Alert>
-		);
-	};
+        try {
+            await diceBoxRef.current.roll(notations);
+        } catch (e) {
+            console.error('Error during reroll:', e);
+            setIsRandomizing(false);
+        }
+    }, [results]);
 
-	return (
-		<div id={'dicebox-container'} className={styles.container} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-			{/* Header */}
-			<div className={`${styles.diffusedBackground} ${styles.header}`}>
-				<div className={styles.headerContent}>
-					<Group justify='space-between' align='center'>
-						<Button variant='subtle' onClick={() => setShowResults(!showResults)} disabled={results.length === 0} className={styles.totalButton}>
-							<Text size='xl' fw={700} className={styles.totalText}>
-								{`${lastActionName ? `${lastActionName}: ` : ''}Total ${isRandomizing ? displayTotal : results.reduce((acc, r) => acc + r.value, 0)}`}
-							</Text>
-						</Button>
-						<ActionIcon variant='subtle' onClick={() => setShowActions(!showActions)} size='lg'>
-							{showActions ? <IconChevronRight size={24} /> : <IconChevronLeft size={24} />}
-						</ActionIcon>
-					</Group>
-				</div>
+    // ---------------------------
+    //  RENDER
+    // ---------------------------
 
-				{/* Results Panel */}
-				<Transition
-					mounted={showResults}
-					transition={{
-						in: { opacity: 1, transform: 'translateY(0)' },
-						out: { opacity: 0, transform: 'translateY(-20px)' },
-						common: { transition: 'opacity 400ms ease, transform 400ms ease' },
-						transitionProperty: 'opacity, transform',
-					}}
-				>
-					{(_styles) => (
-						<div className={styles.resultsContainer} style={_styles}>
-							<SimpleGrid cols={4} spacing='md'>
-								{results.map((r, index) => (
-									<div
-										key={`${index}-${r.qty}${r.rolls[0].dieType}-${r.value}`}
-										role='article'
-										aria-label={`Dice roll result: ${r.qty}${r.rolls[0].dieType} rolled ${r.value}`}
-										className={styles.resultCard}
-										tabIndex={0}
-									>
-										<Text fw={500} className={styles.dieType}>
-											{r.qty}
-											{r.rolls[0].dieType}
-										</Text>
-										<Text size='xl' fw={700} className={styles.dieValue}>
-											{r.value}
-										</Text>
-									</div>
-								))}
-							</SimpleGrid>
-						</div>
-					)}
-				</Transition>
-			</div>
+    return (
+        <div id="dicebox-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw' }} onClick={(e) => e.stopPropagation()}>
+            {/* HEADER */}
+            <div className={`${styles.diffusedBackground} ${styles.header}`}>
+                <Group justify="space-between" align="center">
+                    <Button
+                        variant="subtle"
+                        disabled={results.length === 0}
+                        onClick={() => setShowResults((v) => !v)}
+                        className={styles.totalButton}
+                    >
+                        <Text size="xl" fw={700} className={styles.totalText}>
+                            {`Total ${isRandomizing ? displayTotal : results.reduce((a, r) => a + r.value, 0)}`}
+                        </Text>
+                    </Button>
 
-			{/* Main DiceBox Container */}
-			<div className={styles.mainContainer}>
-				{isLoading && (
-					<Center className={styles.loader}>
-						<Loader size='xl' />
-					</Center>
-				)}
-				{renderHitConfirmation()}
-				<div ref={containerRef} id={containerId.current} data-testid='dice-container' className={styles.diceContainer} />
-			</div>
+                    <ActionIcon
+                        variant="subtle"
+                        size="lg"
+                        onClick={() => setShowActions((v) => !v)}
+                    >
+                        {showActions ? <IconChevronRight size={24} /> : <IconChevronLeft size={24} />}
+                    </ActionIcon>
+                </Group>
 
-			{/* Actions Drawer */}
-			<Drawer
-				opened={showActions}
-				onClose={() => setShowActions(false)}
-				position='right'
-				size='md'
-				title='Actions'
-				withinPortal={false}
-				styles={{
-					root: {
-						position: 'absolute',
-						height: '100%',
-					},
-					body: {
-						padding: 0,
-					},
-				}}
-			>
-				<div className={styles.actionWrapper}>
-					{actions.map((action) => (
-						<div key={action.id} className={styles.actionGroup}>
-							{action.requiresD20 ? (
-								<Group gap={0} className={styles.actionGroup}>
-									<Button onClick={() => performActionRoll(action, 'normal')} className={styles.actionButton}>
-										{action.name}
-									</Button>
-									<Menu>
-										<Menu.Target>
-											<ActionIcon variant='filled' size={36} className={styles.dropdownButton}>
-												<IconChevronDown size={16} stroke={1.5} />
-											</ActionIcon>
-										</Menu.Target>
-										<Menu.Dropdown>
-											<Menu.Item onClick={() => performActionRoll(action, 'advantage')}>Advantage</Menu.Item>
-											<Menu.Item onClick={() => performActionRoll(action, 'disadvantage')}>Disadvantage</Menu.Item>
-										</Menu.Dropdown>
-									</Menu>
-								</Group>
-							) : (
-								<Button fullWidth onClick={() => performActionRoll(action)}>
-									{action.name}
-								</Button>
-							)}
-						</div>
-					))}
-				</div>
-			</Drawer>
+                {/* RESULTS PANEL */}
+                <Transition
+                    mounted={showResults}
+                    transition={{
+                        transitionProperty: 'opacity, transform',
+                        in: { opacity: 1, transform: 'translateY(0)' },
+                        out: { opacity: 0, transform: 'translateY(-20px)' },
+                        common: { transition: 'opacity 400ms ease, transform 400ms ease' },
+                    }}
+                >
+                    {(style) => (
+                        <div className={styles.resultsContainer} style={style}>
+                            <SimpleGrid cols={4} spacing="md">
+                                {results.map((r, index) => (
+                                    <div key={index} className={styles.resultCard}>
+                                        <Text fw={500}>{r.qty + r.rolls[0].dieType}</Text>
+                                        <Text size="xl" fw={700}>
+                                            {r.value}
+                                        </Text>
+                                    </div>
+                                ))}
+                            </SimpleGrid>
+                        </div>
+                    )}
+                </Transition>
+            </div>
 
-			{/* Footer */}
-			<div className={`${styles.diffusedBackground} ${styles.footer}`}>
-				<Group justify='space-between' align='center'>
-					<ActionIcon
-						variant='light'
-						size={48}
-						onClick={async () => {
-							setLastActionName('D20 Check');
-							if (diceBoxRef.current) {
-								setResults([]);
-								setIsRandomizing(true);
-								setIsDamageRoll(false);
-								const results = await diceBoxRef.current.roll(['1d20']);
-								setDisplayTotal(results[0].value);
-								setResults([
-									{
-										qty: 1,
-										value: results[0].value,
-										rolls: [{ dieType: 'd20' }],
-									},
-								]);
-							}
-						}}
-						color='blue'
-					>
-						{'d20'}
-					</ActionIcon>
-					<Button
-						onClick={async () => {
-							if (results.length > 0 && diceBoxRef.current) {
-								// If we have a lastRolledAction and it required a d20, handle it like a new action roll
+            {/* MAIN 3D DICE AREA */}
+            <div className={styles.mainContainer} style={{ backgroundColor: 'transparent' }}>
+                <div
+                    id={containerId.current}
+                    ref={containerCallbackRef}
+                    className={styles.diceContainer}
+                // ensure the container has non-zero size via CSS; dice-box requires visible area
+                />
 
-								if (lastRolledAction?.requiresD20) {
-									await performActionRoll(lastRolledAction, 'normal');
-									return;
-								}
+                {isLoading && (
+                    <Center className={styles.loader}>
+                        <Loader size="xl" />
+                    </Center>
+                )}
+            </div>
 
-								// Otherwise, perform a simple reroll
-								const notations = results.map((roll) => `${roll.qty}${roll.rolls[0].dieType}`);
-								setResults([]);
-								setIsRandomizing(true);
-								await diceBoxRef.current.roll(notations);
-							}
-						}}
-						size='lg'
-						className={styles.rerollButton}
-						disabled={results.length === 0}
-					>
-						{'Reroll'}
-					</Button>
-					<ActionIcon variant='light' size={48} onClick={() => toggleShowDiceBox()} color='gray'>
-						<IconSettings size={36} />
-					</ActionIcon>
-				</Group>
-			</div>
-		</div>
-	);
+            {/* ACTIONS DRAWER */}
+            <Drawer
+                opened={showActions}
+                onClose={() => setShowActions(false)}
+                position="right"
+                size="md"
+                title="Actions"
+                withinPortal={false}
+            >
+                <div className={styles.actionWrapper}>
+                    {actions.map((action: Action) => (
+                        <Button key={action.id} fullWidth>
+                            {action.name}
+                        </Button>
+                    ))}
+                </div>
+            </Drawer>
+
+            {/* FOOTER */}
+            <div className={`${styles.diffusedBackground} ${styles.footer}`}>
+                <Group justify="space-between" align="center">
+                    {/* TODO Parametize labels for localization */}
+                    <ActionIcon variant="light" size={48} onClick={rollD20} color="blue">
+                        d20
+                    </ActionIcon>
+
+                    <Button
+                        size="lg"
+                        onClick={reroll}
+                        disabled={results.length === 0}
+                        className={styles.rerollButton}
+                    >
+                        Reroll
+                    </Button>
+
+                    <ActionIcon variant="light" size={48} onClick={toggleShowDiceBox}>
+                        <IconSettings size={36} />
+                    </ActionIcon>
+                </Group>
+            </div>
+        </div>
+    );
 };
 
 export default DiceBoxComponent;

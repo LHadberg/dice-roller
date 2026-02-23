@@ -9,6 +9,7 @@ interface VisualsConfigProps {
 }
 
 const VisualsConfig: React.FC<VisualsConfigProps> = ({ config, onUpdate }) => {
+  {/* TODO: Add localization */ }
   const themes = [
     { value: 'default', label: 'Default' },
     { value: 'rust', label: 'Rust' },
@@ -19,10 +20,12 @@ const VisualsConfig: React.FC<VisualsConfigProps> = ({ config, onUpdate }) => {
   return (
     <Stack gap="md">
       <Text size="xl" fw={700}>
+        {/* TODO: Add localization */}
         Visual Configuration
       </Text>
       <Select
         label="Theme"
+
         description="Choose from available dice themes"
         data={themes}
         value={config.theme}
