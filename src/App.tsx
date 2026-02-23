@@ -1,125 +1,248 @@
-import React, { Suspense, useEffect, useRef, useState } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
-import { Html, OrbitControls, Box, PerspectiveCamera, Environment } from '@react-three/drei';
+import * as THREE from 'three';
+
+import { Html, PerspectiveCamera } from '@react-three/drei';
+import React, { useEffect, useRef, useState } from 'react';
+import { useSpring, animated } from '@react-spring/three';
+import { Canvas, useLoader, useThree } from '@react-three/fiber';
+
+import './App.css';
 import { Configuration } from './components/configuration/Configuration';
-import { LocalStorageConfigurationReturn, useLocalStorageConfiguration } from './hooks/useLocalStorageConfiguration';
+import { useLocalStorageConfiguration } from './hooks/useLocalStorageConfiguration';
 import { defaultConfigs } from './constants/defaultConfiguration';
+import { MantineProvider } from '@mantine/core';
 import DiceBoxComponent from './components/DiceBox';
-import { AppShell, MantineProvider } from '@mantine/core';
-import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-interface ModelProps {
-	orbitRef: React.RefObject<OrbitControlsImpl>;
-	configuration: LocalStorageConfigurationReturn;
+
+interface DiceBoxContainerProps {
+	onClick: () => void;
+	configuration: ReturnType<typeof useLocalStorageConfiguration>;
 }
 
-const Model: React.FC<ModelProps> = ({ orbitRef, configuration }) => {
-	const ref = useRef<any>(null);
-	const { viewport, size, camera } = useThree();
-	console.debug('🚀 ~ size:', size);
-	console.debug('🚀 ~ viewport:', viewport);
-	console.debug('🚀 ~ camera:', camera);
-	const [cameraRotation, setCameraRotation] = useState<'configuration' | 'dicebox'>('configuration');
-	const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+const Thing: React.FC<DiceBoxContainerProps> = ({ }) => {
+	console.log('Thing Rendering');
+	const ref = useRef();
+	const {
+		viewport: { width: viewportWidth, height: viewportHeight },
+		size,
+	} = useThree();
+	const wallThickness = 0.5;
 
-	// Update dimensions after first render
+	const wallMeshHorizontal = useLoader(THREE.TextureLoader, '/src/assets/textures/wall/horizontal/wood.jpg');
+	const wallMeshVertical = useLoader(THREE.TextureLoader, '/src/assets/textures/wall/vertical/wood.jpg');
+	const backgroundMesh = useLoader(THREE.TextureLoader, '/src/assets/textures/background/cardboard.jpg');
+
 	useEffect(() => {
-		const currentViewport = viewport.getCurrentViewport(camera);
-		console.debug('🚀 ~ useEffect ~ currentViewport:', currentViewport);
-		setDimensions({
-			width: size.width,
-			height: size.height,
-		});
-	}, [camera, viewport]);
-	console.log('dimensions:', dimensions);
+		// Handle horizontal wall textures (top and bottom)
+		if (wallMeshHorizontal) {
+			wallMeshHorizontal.wrapS = wallMeshHorizontal.wrapT = THREE.RepeatWrapping;
 
-	const rotateCamera = () => {
-		if (cameraRotation === 'configuration' && orbitRef.current) {
-			orbitRef.current.setAzimuthalAngle(Math.PI);
-			orbitRef.current.update();
-		} else if (cameraRotation === 'dicebox' && orbitRef.current) {
-			orbitRef.current.setAzimuthalAngle(0);
-			orbitRef.current.update();
-		}
-	};
+			// Set a consistent real-world scale (e.g. 1 unit = 1 meter)
+			const textureScale = 1; // How many texture repeats per unit
 
-	const changeCameraRotation = () => {
-		if (cameraRotation === 'configuration') {
-			setCameraRotation('dicebox');
-		} else {
-			setCameraRotation('configuration');
+			// Width is much larger than height for horizontal walls
+			// We want the texture to repeat naturally across the width
+			wallMeshHorizontal.repeat.set(viewportWidth * textureScale, 0.5 * textureScale);
 		}
 
-		rotateCamera();
-	};
+		// Handle vertical wall textures (left and right)
+		if (wallMeshVertical) {
+			wallMeshVertical.wrapS = wallMeshVertical.wrapT = THREE.RepeatWrapping;
+
+			// Set a consistent real-world scale
+			const textureScale = 1; // How many texture repeats per unit
+
+			// Height is much larger than width for vertical walls
+			// We want the texture to repeat naturally across the height
+			wallMeshVertical.repeat.set(0.5 * textureScale, viewportHeight * textureScale);
+		}
+
+		// Handle background texture
+		if (backgroundMesh) {
+			backgroundMesh.wrapS = backgroundMesh.wrapT = THREE.RepeatWrapping;
+
+			// Set a consistent scale for the background
+			// This should match the aspect ratio of your viewport
+			backgroundMesh.repeat.set(
+				1, // Single repeat horizontally
+				1 // Single repeat vertically
+			);
+		}
+	}, [wallMeshHorizontal, wallMeshVertical, backgroundMesh, viewportHeight, viewportWidth]);
+
+	const wallMetalness = 0.2;
+	const wallRoughness = 0.5;
 
 	return (
-		<group ref={ref}>
-			<mesh>
-				<axesHelper args={[5]} />
-				<Box args={[viewport.width, viewport.height, 3]} position={[0, 0, 0]}>
-					<meshStandardMaterial color='orange' />
-				</Box>
-
-				{/* DiceBox Component */}
-				<Html
-					transform
-					position={[0, 0, -1.50000001]} // Moved slightly back
-					rotation={[0, Math.PI, 0]}
-					// occlude={cameraRotation === 'configuration'} // Only occlude when active
-					style={{height: size.height, width: size.width}}
-				>
-					<MantineProvider>
-						<AppShell id={'dicebox-dice-shell'}>
-							<DiceBoxComponent configuration={configuration} toggleShowDiceBox={changeCameraRotation} />
-						</AppShell>
-					</MantineProvider>
-				</Html>
-
-				{/* Configuration Component */}
-				<Html
-					transform
-					fullscreen
-					position={[0, 0, 1.50000001]} // Moved slightly forward
-					// occlude={cameraRotation === 'dicebox'} // Only occlude when active
-					style={{height: '100vh', width: size.width}}
-				>
-					<MantineProvider>
-						<AppShell style={{height: '100vh'}} id={'dicebox-configuration-shell'}>
-							<Configuration configuration={configuration} toggleShowDiceBox={changeCameraRotation} />
-						</AppShell>
-					</MantineProvider>
-				</Html>
+		// <group onClick={onClick}>
+		<group>
+			{/* Top Wall */}
+			<mesh position={[0, (viewportHeight - wallThickness) / 2, 0.5]}>
+				<boxGeometry attach='geometry' args={[viewportWidth, 0.5, wallThickness]} />
+				<meshStandardMaterial map={wallMeshHorizontal} metalness={wallMetalness} roughness={wallRoughness} />
+			</mesh>
+			{/* Left Wall */}
+			<mesh position={[-(viewportWidth - wallThickness) / 2, 0, 0.5]}>
+				<boxGeometry attach='geometry' args={[0.5, viewportHeight, wallThickness]} />
+				<meshStandardMaterial map={wallMeshVertical} metalness={wallMetalness} roughness={wallRoughness} />
+			</mesh>
+			{/* Right Wall */}
+			<mesh position={[(viewportWidth - wallThickness) / 2, 0, 0.5]}>
+				<boxGeometry attach='geometry' args={[0.5, viewportHeight, wallThickness]} />
+				<meshStandardMaterial map={wallMeshVertical} metalness={wallMetalness} roughness={wallRoughness} />
+			</mesh>
+			{/* Bottom Wall */}
+			<mesh position={[0, -(viewportHeight - wallThickness) / 2, 0.5]}>
+				<boxGeometry attach='geometry' args={[viewportWidth, 0.5, wallThickness]} />
+				<meshStandardMaterial map={wallMeshHorizontal} metalness={wallMetalness} roughness={wallRoughness} />
+			</mesh>
+			{/* Background */}
+			<mesh ref={ref as any} scale={[viewportWidth, viewportHeight, 1]}>
+				<boxGeometry attach='geometry' args={[1, 1, 0.1]} />
+				<meshStandardMaterial map={backgroundMesh} roughness={0.7} metalness={0.8} />
 			</mesh>
 		</group>
 	);
 };
 
-const App: React.FC = () => {
-	const configuration = useLocalStorageConfiguration(defaultConfigs);
-	const orbitRef = useRef<OrbitControlsImpl>(null);
+interface DiceAppProps {
+	configuration: ReturnType<typeof useLocalStorageConfiguration>;
+}
+
+export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
+	console.log('Dice-App Rendering');
+	const { size } = useThree();
+	console.debug('🚀 ~ Diceapp ~ size:', size);
+
+	const [isRotated, setIsRotated] = useState(false);
+	const [isZoomedOut, setIsZoomedOut] = useState(false);
+	const [showDiceBox, setShowDiceBox] = useState(true);
+	const [showConfiguration, setShowConfiguration] = useState(false);
+	const [diceBoxMounted, setDiceBoxMounted] = useState(false);
+
+	// Create a spring animation from 0 to 180 degrees
+	const { rotation } = useSpring({
+		rotation: isRotated ? Math.PI : 0,
+		config: {
+			mass: 1,
+			tension: 50,
+			friction: 10,
+			precision: 0.001,
+		},
+		onStart: () => {
+			setIsZoomedOut(true);
+		},
+		onResolve: () => {
+			setIsZoomedOut(false);
+		},
+		// onChange: (a, b, c) => {
+		// 	console.log(a, b, c)
+		// },
+	});
+
+	const { position } = useSpring({
+		position: isZoomedOut ? 5 : 0,
+		config: {
+			mass: 1,
+			tension: 100,
+			friction: 15,
+			precision: 0.001,
+		},
+	});
+
+	useEffect(() => {
+		// Set a timeout to ensure the DiceBox mounts after the 3D environment is ready
+		const timer = setTimeout(() => {
+			setDiceBoxMounted(true);
+		}, 500);
+
+		return () => clearTimeout(timer);
+	}, []);
+
+	const toggleCamera = () => {
+		setIsRotated(!isRotated);
+
+		// Add a small delay before toggling the components to allow for animation
+		setTimeout(() => {
+			setShowDiceBox(!showDiceBox);
+			setShowConfiguration(!showConfiguration);
+		}, 300);
+	};
+
+	const toggleShowDiceBox = (value?: React.SetStateAction<boolean> | undefined) => {
+		const newValue = value !== undefined ?
+			(typeof value === 'function' ? (value as Function)(showDiceBox) : value) :
+			!showDiceBox;
+
+		// If we're currently on the DiceBox side, trigger the camera rotation
+		if (!isRotated) {
+			toggleCamera();
+		} else {
+			// If we're on the configuration side already, just update the state
+			setShowDiceBox(newValue);
+			setShowConfiguration(!newValue);
+		}
+	};
 
 	return (
-		<Canvas id={'dicebox-outer-canvas'}  style={{ height: '100vh', width: '100vw' }}>
-			<Suspense fallback={null}>
-				<Model configuration={configuration} orbitRef={orbitRef} />
-			</Suspense>
-			<PerspectiveCamera makeDefault position={[0, 0, 32]} />
-			<OrbitControls
-				ref={orbitRef}
-				// autoRotate={true}
-				enableZoom={false}
-				// enablePan={false}
-				minPolarAngle={Math.PI / 2}
-				maxPolarAngle={Math.PI / 2}
-				// minAzimuthAngle={0}
-				// maxAzimuthAngle={0}
-				// enableDamping={false}
-				// dampingFactor={0}
-				// rotateSpeed={0}
+		<>
+			<animated.group rotation-y={rotation}>
+				<animated.group position-z={position}>
+					<PerspectiveCamera makeDefault position={[0, 0, 10]} lookAt={() => [0, 0, 10]} />
+				</animated.group>
+			</animated.group>
+			<Thing
+				onClick={toggleCamera}
+				configuration={configuration}
 			/>
-			<Environment preset='city' />
-		</Canvas>
+
+			<ambientLight />
+			<pointLight position={[7, 7, 9]} intensity={0.8} />
+
+			{/* DiceBox Component (frontside) */}
+			{showDiceBox && diceBoxMounted && !isRotated && (
+				<Html transform occlude distanceFactor={10} scale={[0.4, 0.4, 1]} rotation={[0, 0, 0]} position={[0, 0, 0.2]}>
+					<div
+						style={{
+							width: size.width,
+							height: size.height,
+							padding: '0',
+						}}
+					>
+						<MantineProvider>
+							<DiceBoxComponent
+								configuration={configuration}
+								toggleShowDiceBox={toggleShowDiceBox}
+							/>
+						</MantineProvider>
+					</div>
+				</Html>
+			)}
+
+			{/* Configuration Panel (backside) */}
+			{showConfiguration && (
+				<Html transform occlude distanceFactor={10} scale={[0.4, 0.4, 1]} rotation={[0, Math.PI, 0]} position={[0, 0, -0.1]}>
+					<div
+						style={{
+							width: size.width,
+							height: size.height,
+							padding: '0px',
+						}}
+					>
+						<MantineProvider>
+							<Configuration toggleShowDiceBox={toggleCamera} />
+						</MantineProvider>
+					</div>
+				</Html>
+			)}
+		</>
 	);
 };
 
-export default App;
+export const DiceAppWrapper = () => {
+	const configuration = useLocalStorageConfiguration(defaultConfigs);
+
+	return (
+		<Canvas>
+			<DiceApp configuration={configuration} />
+		</Canvas>
+	);
+};

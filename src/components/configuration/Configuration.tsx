@@ -4,14 +4,16 @@ import ActionsConfig from './ActionsConfig';
 import PhysicsConfig from './PhysicsConfig';
 import VisualsConfig from './VisualsConfig';
 import { IconDiceFilled } from '@tabler/icons-react';
-import { LocalStorageConfigurationReturn } from '../../hooks/useLocalStorageConfiguration';
+import { useLocalStorageConfiguration } from '../../hooks/useLocalStorageConfiguration';
+import { defaultConfigs } from '../../constants/defaultConfiguration';
 
 export interface ConfigurationProps {
-	configuration: LocalStorageConfigurationReturn;
 	toggleShowDiceBox: (value?: React.SetStateAction<boolean> | undefined) => void;
 }
 
-export const Configuration: React.FC<ConfigurationProps> = ({ configuration, toggleShowDiceBox }) => {
+export const Configuration: React.FC<ConfigurationProps> = ({ toggleShowDiceBox }) => {
+	const configuration = useLocalStorageConfiguration(defaultConfigs);
+
 	console.log('Configuration Rendering');
 	const { stats, actions, physicsConfig, visualConfig, handleStatsUpdate, handleActionsUpdate, handlePhysicsUpdate, handleVisualsUpdate } = configuration;
 	const tabs = {
@@ -21,31 +23,37 @@ export const Configuration: React.FC<ConfigurationProps> = ({ configuration, tog
 		visuals: { key: 'visuals', label: 'Visuals' },
 	};
 	return (
-		<div style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', background: 'white' }}>
+		<div
+			onClick={(e) => {
+				e.stopPropagation();
+			}}
+			style={{
+				height: '100%',
+				width: '100%',
+				display: 'flex',
+				flexDirection: 'column',
+				background: 'white',
+				maxHeight: '100%', // Add max height constraint
+				overflow: 'hidden' // Prevent overflow
+			}}
+		>
 			<Tabs
 				styles={{
-					root: { display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' },
-					panel: {
-						maxWidth: 'calc(100vw - 2rem)',
-						overflowY: 'auto',
+					root: {
+						display: 'flex',
+						flexDirection: 'column',
 						flex: 1,
-						// msOverflowStyle: 'none', // IE and Edge
-						// scrollbarWidth: 'none', // Firefox
-						// '&::-webkit-scrollbar': {
-						// 	display: 'none', // Chrome, Safari, Opera
-						// },
-						// position: 'relative',
-						// '&::after': {
-						// 	content: '""',
-						// 	position: 'absolute',
-						// 	bottom: 0,
-						// 	left: 0,
-						// 	right: 0,
-						// 	height: '50px',
-						// 	background: 'linear-gradient(transparent, white)',
-						// 	pointerEvents: 'none',
-						// },
+						overflow: 'hidden',
+						maxHeight: 'calc(100% - 80px)'
 					},
+					panel: {
+						maxWidth: '100%',
+
+						overflowY: 'auto',
+						overflowX: 'hidden',
+						flex: 1,
+						padding: '0 1rem'
+					}
 				}}
 				defaultValue={tabs.stats.key}
 				p={'1rem'}
@@ -82,6 +90,8 @@ export const Configuration: React.FC<ConfigurationProps> = ({ configuration, tog
 					zIndex: 10,
 					display: 'flex',
 					justifyContent: 'flex-end',
+					height: '80px', // Fixed height for the action bar
+					boxSizing: 'border-box', // Ensure padding is included in height calculation
 				}}
 			>
 				<ActionIcon variant='light' size={48} onClick={() => toggleShowDiceBox()} color='blue'>
