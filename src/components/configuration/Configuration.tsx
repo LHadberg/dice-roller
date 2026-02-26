@@ -1,4 +1,4 @@
-import { ActionIcon, Tabs } from '@mantine/core';
+import { ActionIcon, Tabs, useComputedColorScheme } from '@mantine/core';
 import StatsConfig from './StatsConfig';
 import ActionsConfig from './ActionsConfig';
 import PhysicsConfig from './PhysicsConfig';
@@ -13,6 +13,7 @@ export interface ConfigurationProps {
 
 export const Configuration: React.FC<ConfigurationProps> = ({ toggleShowDiceBox }) => {
 	const configuration = useLocalStorageConfiguration(defaultConfigs);
+	const isDark = useComputedColorScheme('light') === 'dark';
 
 	console.log('Configuration Rendering');
 	const { stats, actions, physicsConfig, visualConfig, handleStatsUpdate, handleActionsUpdate, handlePhysicsUpdate, handleVisualsUpdate } = configuration;
@@ -32,9 +33,11 @@ export const Configuration: React.FC<ConfigurationProps> = ({ toggleShowDiceBox 
 				width: '100%',
 				display: 'flex',
 				flexDirection: 'column',
-				background: 'white',
-				maxHeight: '100%', // Add max height constraint
-				overflow: 'hidden' // Prevent overflow
+				background: isDark ? 'rgba(26, 27, 30, 0.92)' : 'rgba(255, 255, 255, 0.92)',
+				maxHeight: '100%',
+				overflow: 'hidden',
+				borderRadius: '12px',
+				border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)',
 			}}
 		>
 			<Tabs
@@ -85,7 +88,7 @@ export const Configuration: React.FC<ConfigurationProps> = ({ toggleShowDiceBox 
 			<div
 				style={{
 					padding: '1rem',
-					background: 'rgba(255, 255, 255, 0.9)',
+					background: isDark ? 'rgba(26, 27, 30, 0.92)' : 'rgba(255, 255, 255, 0.92)',
 					backdropFilter: 'blur(5px)',
 					zIndex: 10,
 					display: 'flex',

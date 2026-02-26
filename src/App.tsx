@@ -167,6 +167,9 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 		}, 300);
 	};
 
+	// True only once the flip animation has fully settled on the config side
+	const configSlide = isRotated && !isZoomedOut;
+
 	const toggleShowDiceBox = (value?: React.SetStateAction<boolean> | undefined) => {
 		const newValue = value !== undefined ?
 			(typeof value === 'function' ? (value as Function)(showDiceBox) : value) :
@@ -207,7 +210,7 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 							padding: '0',
 						}}
 					>
-						<MantineProvider>
+						<MantineProvider defaultColorScheme='auto'>
 							<DiceBoxComponent
 								configuration={configuration}
 								toggleShowDiceBox={toggleShowDiceBox}
@@ -220,16 +223,19 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 			{/* Configuration Panel (backside) */}
 			{showConfiguration && (
 				<Html transform occlude distanceFactor={10} scale={[0.4, 0.4, 1]} rotation={[0, Math.PI, 0]} position={[0, 0, -0.1]}>
-					<div
-						style={{
-							width: size.width,
-							height: size.height,
-							padding: '0px',
-						}}
-					>
-						<MantineProvider>
-							<Configuration toggleShowDiceBox={toggleCamera} />
-						</MantineProvider>
+					<div style={{ width: size.width, height: size.height, overflow: 'hidden' }}>
+						<div
+							style={{
+								width: '100%',
+								height: '100%',
+								transform: configSlide ? 'translateX(0)' : 'translateX(100%)',
+								transition: configSlide ? 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
+							}}
+						>
+							<MantineProvider defaultColorScheme='auto'>
+								<Configuration toggleShowDiceBox={toggleCamera} />
+							</MantineProvider>
+						</div>
 					</div>
 				</Html>
 			)}

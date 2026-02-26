@@ -14,21 +14,19 @@
   z-index: 10;
 }
 
-/* Header styles */
-.header {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  position: relative;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.headerContent {
-  padding: 1rem;
+/* Total box - top left absolute */
+.totalBox {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 10;
+  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
 }
 
 .totalButton {
   padding: 0;
   height: auto;
-  flex: 1;
 }
 
 .totalText {
@@ -36,10 +34,19 @@
   width: 100%;
 }
 
+/* Actions toggle - right side, vertically centered */
+.actionsToggle {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+}
+
 /* Results panel styles */
 .resultsContainer {
   position: absolute;
-  top: 4rem;
+  top: 5rem;
   left: 0;
   right: 0;
   padding: 1rem;
@@ -167,4 +174,36 @@
   flex: 1;
   max-height: 46px;
   margin-left: 1rem;
+}
+
+/* Dark mode overrides */
+:global([data-mantine-color-scheme="dark"]) .diffusedBackground {
+  background: rgba(26, 27, 30, 0.9);
+}
+
+:global([data-mantine-color-scheme="dark"]) .resultsContainer {
+  background: rgba(26, 27, 30, 0.9);
+}
+
+:global([data-mantine-color-scheme="dark"]) .resultCard {
+  background-color: #25262b;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+:global([data-mantine-color-scheme="dark"]) .loader {
+  background: rgba(26, 27, 30, 0.8);
+}
+
+:global([data-mantine-color-scheme="dark"]) .header {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+}
+
+:global([data-mantine-color-scheme="dark"]) .footer {
+  border-top-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.4), 0 -2px 4px -1px rgba(0, 0, 0, 0.3);
+}
+
+:global([data-mantine-color-scheme="dark"]) .dieType {
+  color: #909296;
 }

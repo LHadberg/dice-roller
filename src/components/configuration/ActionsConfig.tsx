@@ -107,6 +107,7 @@ const ActionsConfig: React.FC<ActionsConfigProps> = ({ actions, onUpdate }) => {
                 data={statOptions}
                 value={action.statModifier}
                 onChange={(value) => updateAction(actionIndex, { statModifier: value as keyof Stats })}
+                comboboxProps={{ withinPortal: false }}
               />
             )}
 
@@ -133,6 +134,7 @@ const ActionsConfig: React.FC<ActionsConfigProps> = ({ actions, onUpdate }) => {
                     onUpdate(newActions);
                   }}
                   style={{ width: 100 }}
+                  comboboxProps={{ withinPortal: false }}
                 />
                 <ActionIcon
                   color="red"

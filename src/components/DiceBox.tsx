@@ -237,56 +237,57 @@ const DiceBoxComponent: React.FC<DiceBoxProps> = ({
     // ---------------------------
 
     return (
-        <div id="dicebox-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw' }} onClick={(e) => e.stopPropagation()}>
-            {/* HEADER */}
-            <div className={`${styles.diffusedBackground} ${styles.header}`}>
-                <Group justify="space-between" align="center">
-                    <Button
-                        variant="subtle"
-                        disabled={results.length === 0}
-                        onClick={() => setShowResults((v) => !v)}
-                        className={styles.totalButton}
-                    >
-                        <Text size="xl" fw={700} className={styles.totalText}>
-                            {`Total ${isRandomizing ? displayTotal : results.reduce((a, r) => a + r.value, 0)}`}
-                        </Text>
-                    </Button>
-
-                    <ActionIcon
-                        variant="subtle"
-                        size="lg"
-                        onClick={() => setShowActions((v) => !v)}
-                    >
-                        {showActions ? <IconChevronRight size={24} /> : <IconChevronLeft size={24} />}
-                    </ActionIcon>
-                </Group>
-
-                {/* RESULTS PANEL */}
-                <Transition
-                    mounted={showResults}
-                    transition={{
-                        transitionProperty: 'opacity, transform',
-                        in: { opacity: 1, transform: 'translateY(0)' },
-                        out: { opacity: 0, transform: 'translateY(-20px)' },
-                        common: { transition: 'opacity 400ms ease, transform 400ms ease' },
-                    }}
+        <div id="dicebox-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+            {/* TOTAL - top left, position absolute */}
+            <div className={`${styles.diffusedBackground} ${styles.totalBox}`}>
+                <Button
+                    variant="subtle"
+                    disabled={results.length === 0}
+                    onClick={() => setShowResults((v) => !v)}
+                    className={styles.totalButton}
                 >
-                    {(style) => (
-                        <div className={styles.resultsContainer} style={style}>
-                            <SimpleGrid cols={4} spacing="md">
-                                {results.map((r, index) => (
-                                    <div key={index} className={styles.resultCard}>
-                                        <Text fw={500}>{r.qty + r.rolls[0].dieType}</Text>
-                                        <Text size="xl" fw={700}>
-                                            {r.value}
-                                        </Text>
-                                    </div>
-                                ))}
-                            </SimpleGrid>
-                        </div>
-                    )}
-                </Transition>
+                    <Text size="xl" fw={700} className={styles.totalText}>
+                        {`Total ${isRandomizing ? displayTotal : results.reduce((a, r) => a + r.value, 0)}`}
+                    </Text>
+                </Button>
             </div>
+
+            {/* ACTIONS TOGGLE - right side, vertically centered, position absolute */}
+            <div className={styles.actionsToggle}>
+                <ActionIcon
+                    variant="subtle"
+                    size="lg"
+                    onClick={() => setShowActions((v) => !v)}
+                >
+                    {showActions ? <IconChevronRight size={24} /> : <IconChevronLeft size={24} />}
+                </ActionIcon>
+            </div>
+
+            {/* RESULTS PANEL */}
+            <Transition
+                mounted={showResults}
+                transition={{
+                    transitionProperty: 'opacity, transform',
+                    in: { opacity: 1, transform: 'translateY(0)' },
+                    out: { opacity: 0, transform: 'translateY(-20px)' },
+                    common: { transition: 'opacity 400ms ease, transform 400ms ease' },
+                }}
+            >
+                {(style) => (
+                    <div className={styles.resultsContainer} style={style}>
+                        <SimpleGrid cols={4} spacing="md">
+                            {results.map((r, index) => (
+                                <div key={index} className={styles.resultCard}>
+                                    <Text fw={500}>{r.qty + r.rolls[0].dieType}</Text>
+                                    <Text size="xl" fw={700}>
+                                        {r.value}
+                                    </Text>
+                                </div>
+                            ))}
+                        </SimpleGrid>
+                    </div>
+                )}
+            </Transition>
 
             {/* MAIN 3D DICE AREA */}
             <div className={styles.mainContainer} style={{ backgroundColor: 'transparent' }}>
