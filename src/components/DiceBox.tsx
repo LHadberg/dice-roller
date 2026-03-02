@@ -393,13 +393,13 @@ const DiceBoxComponent: React.FC<DiceBoxProps> = ({
         : '';
 
     return (
-        <div id="dicebox-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+        <div id="dicebox-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', position: 'relative' }} onClick={(e) => { e.stopPropagation(); setShowResults(false); }}>
             {/* TOTAL - top left, position absolute */}
             <div className={`${styles.diffusedBackground} ${styles.totalBox}`}>
                 <Button
                     variant="subtle"
                     disabled={results.length === 0}
-                    onClick={() => setShowResults((v) => !v)}
+                    onClick={(e) => { e.stopPropagation(); setShowResults((v) => !v); }}
                     className={styles.totalButton}
                 >
                     <Text size="xl" fw={700} className={styles.totalText}>
@@ -430,7 +430,7 @@ const DiceBoxComponent: React.FC<DiceBoxProps> = ({
                 }}
             >
                 {(style) => (
-                    <div className={styles.resultsContainer} style={style}>
+                    <div className={styles.resultsContainer} style={style} onClick={(e) => e.stopPropagation()}>
                         <SimpleGrid cols={3} spacing="md">
                             {results.map((r, index) => {
                                 const typeStyle = r.damageType ? DAMAGE_TYPE_STYLES[r.damageType] : undefined;

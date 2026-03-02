@@ -42,7 +42,7 @@
   transform: translateY(-50%);
   z-index: 10;
   border-radius: 8px;
-  padding: 0.25rem;
+  padding: 0.25rem 0.5rem;
 }
 
 /* Results panel styles */
@@ -164,18 +164,18 @@
 /* Footer styles */
 .footer {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 2rem);
+  max-width: 450px;
   padding: 1rem;
-  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06);
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
 }
 
 .rerollButton {
   flex: 1;
   max-height: 46px;
-  margin-left: 1rem;
 }
 
 /* Dark mode overrides */
@@ -201,10 +201,6 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
 }
 
-:global([data-mantine-color-scheme="dark"]) .footer {
-  border-top-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.4), 0 -2px 4px -1px rgba(0, 0, 0, 0.3);
-}
 
 :global([data-mantine-color-scheme="dark"]) .dieType {
   color: #909296;

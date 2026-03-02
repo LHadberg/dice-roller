@@ -159,7 +159,7 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 		setTimeout(() => {
 			setShowDiceBox(!showDiceBox);
 			setShowConfiguration(!showConfiguration);
-		}, 300);
+		}, 600);
 	};
 
 	// True only once the flip animation has fully settled on the config side
@@ -234,8 +234,10 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 							style={{
 								width: '100%',
 								height: '100%',
-								transform: configSlide ? 'translateX(0)' : 'translateX(100%)',
-								transition: configSlide ? 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
+								padding: '1rem',
+								boxSizing: 'border-box',
+								transform: configSlide ? 'translateY(0)' : 'translateY(-100%)',
+								transition: 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
 							}}
 						>
 							<MantineProvider defaultColorScheme='auto'>
