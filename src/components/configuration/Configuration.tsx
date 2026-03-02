@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { ActionIcon, Button, Group, Tabs, useComputedColorScheme } from '@mantine/core';
 import StatsConfig from './StatsConfig';
 import ActionsConfig from './ActionsConfig';
@@ -7,6 +8,8 @@ import { IconDiceFilled } from '@tabler/icons-react';
 import { LocalStorageConfigurationReturn } from '../../hooks/useLocalStorageConfiguration';
 import { useTranslation } from 'react-i18next';
 import styles from '../../styles/Configuration.module.css';
+
+const LAST_TAB_KEY = 'dice-roller-last-config-tab';
 
 export interface ConfigurationProps {
 	toggleShowDiceBox: (value?: React.SetStateAction<boolean> | undefined) => void;
@@ -24,6 +27,20 @@ export const Configuration: React.FC<ConfigurationProps> = ({ toggleShowDiceBox,
 		physics: { key: 'physics', label: t('tabs.physics') },
 		visuals: { key: 'visuals', label: t('tabs.visuals') },
 	};
+
+	const validKeys = Object.keys(tabs);
+	const savedTab = localStorage.getItem(LAST_TAB_KEY);
+	const [activeTab, setActiveTab] = useState<string>(
+		savedTab && validKeys.includes(savedTab) ? savedTab : tabs.stats.key
+	);
+
+	const handleTabChange = (value: string | null) => {
+		if (value) {
+			setActiveTab(value);
+			localStorage.setItem(LAST_TAB_KEY, value);
+		}
+	};
+
 	return (
 		<div
 			className={styles.configWrapper}
@@ -35,7 +52,7 @@ export const Configuration: React.FC<ConfigurationProps> = ({ toggleShowDiceBox,
 				width: '100%',
 				display: 'flex',
 				flexDirection: 'column',
-				background: isDark ? 'rgba(26, 27, 30, 0.92)' : 'rgba(255, 255, 255, 0.92)',
+				background: isDark ? 'rgba(26, 27, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
 				maxHeight: '100%',
 				overflow: 'hidden',
 				borderRadius: '12px',
@@ -49,18 +66,19 @@ export const Configuration: React.FC<ConfigurationProps> = ({ toggleShowDiceBox,
 						flexDirection: 'column',
 						flex: 1,
 						overflow: 'hidden',
-						maxHeight: 'calc(100% - 80px)'
+						maxHeight: 'calc(100% - 80px)',
 					},
 					panel: {
 						maxWidth: '100%',
-
 						overflowY: 'auto',
 						overflowX: 'hidden',
 						flex: 1,
+						minHeight: 0,
 						padding: '0 1rem'
 					}
 				}}
-				defaultValue={tabs.stats.key}
+				value={activeTab}
+				onChange={handleTabChange}
 				p={'1rem'}
 			>
 				<Group justify="space-between" align="center" mb="xs">
@@ -104,8 +122,6 @@ export const Configuration: React.FC<ConfigurationProps> = ({ toggleShowDiceBox,
 			<div
 				style={{
 					padding: '1rem',
-					background: isDark ? 'rgba(26, 27, 30, 0.92)' : 'rgba(255, 255, 255, 0.92)',
-					backdropFilter: 'blur(5px)',
 					zIndex: 10,
 					display: 'flex',
 					justifyContent: 'flex-end',

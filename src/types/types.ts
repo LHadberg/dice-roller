@@ -23,9 +23,12 @@ export interface VisualConfig {
 	diceColor: string;
 	textColor: string;
 	trayColor: string;
+	wallStyle: string;
+	wallRepeat: number;
 	wallColor: string;
 	backgroundColor: string;
 	backgroundStyle: string;
+	backgroundRepeat: number;
 }
 
 export interface DiceResult {

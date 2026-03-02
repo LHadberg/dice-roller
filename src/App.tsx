@@ -24,13 +24,15 @@ const Thing: React.FC<DiceBoxContainerProps> = ({ configuration }) => {
 		viewport: { width: viewportWidth, height: viewportHeight },
 		size,
 	} = useThree();
-	const { wallColor, backgroundColor, backgroundStyle } = configuration.visualConfig;
+	const { wallStyle, wallRepeat, wallColor, backgroundColor, backgroundStyle, backgroundRepeat } = configuration.visualConfig;
 	const wallThickness = 0.5;
 
-	const wallMesh = useLoader(THREE.TextureLoader, '/src/assets/textures/wall/geometric.svg');
+	const wallMeshGeometric = useLoader(THREE.TextureLoader, '/src/assets/textures/wall/geometric.svg');
+	const wallMeshLinenWall = useLoader(THREE.TextureLoader, '/src/assets/textures/background/linen.svg');
+	const wallMesh = wallStyle === 'linen' ? wallMeshLinenWall : wallMeshGeometric;
 	const backgroundMeshDiamond     = useLoader(THREE.TextureLoader, '/src/assets/textures/background/diamond.svg');
-	const backgroundMeshHerringbone = useLoader(THREE.TextureLoader, '/src/assets/textures/background/herringbone.svg');
-	const backgroundMesh = backgroundStyle === 'herringbone' ? backgroundMeshHerringbone : backgroundMeshDiamond;
+	const backgroundMeshLinen = useLoader(THREE.TextureLoader, '/src/assets/textures/background/linen.svg');
+	const backgroundMesh = backgroundStyle === 'linen' ? backgroundMeshLinen : backgroundMeshDiamond;
 
 	// Clone so horizontal and vertical walls get independent repeat values (useLoader caches by URL,
 	// so loading the same path twice returns the same object — cloning avoids the conflict).
@@ -43,25 +45,34 @@ const Thing: React.FC<DiceBoxContainerProps> = ({ configuration }) => {
 	}, [wallMesh]);
 
 	useEffect(() => {
-		// 1 world-unit per tile keeps every surface at the same texel density.
+		// Base scale compensates for intrinsic tile size per wall style (mirrors background logic).
+		const wallBaseScale = wallStyle === 'linen' ? 4 : 1;
+
 		if (wallMeshHorizontal) {
 			wallMeshHorizontal.wrapS = wallMeshHorizontal.wrapT = THREE.RepeatWrapping;
-			wallMeshHorizontal.repeat.set(viewportWidth, wallThickness);
+			wallMeshHorizontal.repeat.set(viewportWidth * wallBaseScale * wallRepeat, wallThickness * wallBaseScale * wallRepeat);
 			wallMeshHorizontal.needsUpdate = true;
 		}
 
 		if (wallMeshVertical) {
 			wallMeshVertical.wrapS = wallMeshVertical.wrapT = THREE.RepeatWrapping;
-			wallMeshVertical.repeat.set(wallThickness, viewportHeight);
+			wallMeshVertical.repeat.set(wallThickness * wallBaseScale * wallRepeat, viewportHeight * wallBaseScale * wallRepeat);
 			wallMeshVertical.needsUpdate = true;
 		}
 
-		for (const bg of [backgroundMeshDiamond, backgroundMeshHerringbone]) {
+		// Each entry: [texture, baseScaleX, baseScaleY].
+		// Base scale compensates for intrinsic SVG tile size differences so repeat=1 looks
+		// consistent across styles. The user-facing backgroundRepeat multiplies on top.
+		const bgConfigs: [THREE.Texture, number, number][] = [
+			[backgroundMeshDiamond, 1, 1],
+			[backgroundMeshLinen,   4, 4],
+		];
+		for (const [bg, sx, sy] of bgConfigs) {
 			bg.wrapS = bg.wrapT = THREE.RepeatWrapping;
-			bg.repeat.set(viewportWidth, viewportHeight);
+			bg.repeat.set(viewportWidth * sx * backgroundRepeat, viewportHeight * sy * backgroundRepeat);
 			bg.needsUpdate = true;
 		}
-	}, [wallMeshHorizontal, wallMeshVertical, backgroundMeshDiamond, backgroundMeshHerringbone, viewportHeight, viewportWidth]);
+	}, [wallMeshHorizontal, wallMeshVertical, wallStyle, wallRepeat, backgroundMeshDiamond, backgroundMeshLinen, viewportHeight, viewportWidth, backgroundRepeat]);
 
 	const wallMetalness = 0.2;
 	const wallRoughness = 0.5;
@@ -112,6 +123,7 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 	const [showDiceBox, setShowDiceBox] = useState(true);
 	const [showConfiguration, setShowConfiguration] = useState(false);
 	const [diceBoxMounted, setDiceBoxMounted] = useState(false);
+	const [configKey, setConfigKey] = useState(0);
 
 	// Create a spring animation from 0 to 180 degrees
 	const { rotation } = useSpring({
@@ -164,6 +176,14 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 
 	// True only once the flip animation has fully settled on the config side
 	const configSlide = isRotated && !isZoomedOut;
+
+	// Remount Configuration after the slide-in CSS transition (500 ms) completes so that
+	// Mantine components (e.g. SegmentedControl) measure their positions while fully visible.
+	useEffect(() => {
+		if (!configSlide) return;
+		const timer = setTimeout(() => setConfigKey((k) => k + 1), 520);
+		return () => clearTimeout(timer);
+	}, [configSlide]);
 
 	// Dynamically compute distanceFactor so the HTML overlay always fills the 3D camera viewport.
 	// From the drei Html source, screen height = div_h × (htmlScale × df/400) × (fov_css / (camZ - objZ))
@@ -241,7 +261,7 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 							}}
 						>
 							<MantineProvider defaultColorScheme='auto'>
-								<Configuration toggleShowDiceBox={toggleCamera} configuration={configuration} />
+								<Configuration key={configKey} toggleShowDiceBox={toggleCamera} configuration={configuration} />
 							</MantineProvider>
 						</div>
 					</div>
