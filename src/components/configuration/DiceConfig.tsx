@@ -2,6 +2,7 @@
 import React from 'react';
 import { NumberInput, Stack, Text } from '@mantine/core';
 import { DiceSelections } from '../../types/types';
+import { useTranslation } from 'react-i18next';
 
 interface DiceConfigProps {
   selections: DiceSelections;
@@ -9,6 +10,8 @@ interface DiceConfigProps {
 }
 
 const DiceConfig: React.FC<DiceConfigProps> = ({ selections, onUpdate }) => {
+  const { t } = useTranslation();
+
   const handleUpdate = (type: keyof DiceSelections, value: number) => {
     onUpdate({
       ...selections,
@@ -18,14 +21,13 @@ const DiceConfig: React.FC<DiceConfigProps> = ({ selections, onUpdate }) => {
 
   return (
     <Stack gap="md">
-      {/* TODO Parametize labels for localization */}
       <Text size="xl" fw={700}>
-        Select Dice
+        {t('diceConfig.title')}
       </Text>
       {Object.entries(selections).map(([type, count]) => (
         <NumberInput
           key={type}
-          label={`${type.toUpperCase()} Dice`}
+          label={t('diceConfig.diceLabel', { type: type.toUpperCase() })}
           value={count}
           min={0}
           max={128}

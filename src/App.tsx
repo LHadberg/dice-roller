@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 import { Html, PerspectiveCamera } from '@react-three/drei';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSpring, animated } from '@react-spring/three';
 import { Canvas, useLoader, useThree } from '@react-three/fiber';
 
@@ -17,56 +17,51 @@ interface DiceBoxContainerProps {
 	configuration: ReturnType<typeof useLocalStorageConfiguration>;
 }
 
-const Thing: React.FC<DiceBoxContainerProps> = ({ }) => {
+const Thing: React.FC<DiceBoxContainerProps> = ({ configuration }) => {
 	console.log('Thing Rendering');
 	const ref = useRef();
 	const {
 		viewport: { width: viewportWidth, height: viewportHeight },
 		size,
 	} = useThree();
+	const { wallColor, backgroundColor, backgroundStyle } = configuration.visualConfig;
 	const wallThickness = 0.5;
 
-	const wallMeshHorizontal = useLoader(THREE.TextureLoader, '/src/assets/textures/wall/horizontal/wood.jpg');
-	const wallMeshVertical = useLoader(THREE.TextureLoader, '/src/assets/textures/wall/vertical/wood.jpg');
-	const backgroundMesh = useLoader(THREE.TextureLoader, '/src/assets/textures/background/cardboard.jpg');
+	const wallMesh = useLoader(THREE.TextureLoader, '/src/assets/textures/wall/geometric.svg');
+	const backgroundMeshDiamond     = useLoader(THREE.TextureLoader, '/src/assets/textures/background/diamond.svg');
+	const backgroundMeshHerringbone = useLoader(THREE.TextureLoader, '/src/assets/textures/background/herringbone.svg');
+	const backgroundMesh = backgroundStyle === 'herringbone' ? backgroundMeshHerringbone : backgroundMeshDiamond;
+
+	// Clone so horizontal and vertical walls get independent repeat values (useLoader caches by URL,
+	// so loading the same path twice returns the same object — cloning avoids the conflict).
+	const [wallMeshHorizontal, wallMeshVertical] = useMemo(() => {
+		const h = wallMesh.clone();
+		const v = wallMesh.clone();
+		h.needsUpdate = true;
+		v.needsUpdate = true;
+		return [h, v];
+	}, [wallMesh]);
 
 	useEffect(() => {
-		// Handle horizontal wall textures (top and bottom)
+		// 1 world-unit per tile keeps every surface at the same texel density.
 		if (wallMeshHorizontal) {
 			wallMeshHorizontal.wrapS = wallMeshHorizontal.wrapT = THREE.RepeatWrapping;
-
-			// Set a consistent real-world scale (e.g. 1 unit = 1 meter)
-			const textureScale = 1; // How many texture repeats per unit
-
-			// Width is much larger than height for horizontal walls
-			// We want the texture to repeat naturally across the width
-			wallMeshHorizontal.repeat.set(viewportWidth * textureScale, 0.5 * textureScale);
+			wallMeshHorizontal.repeat.set(viewportWidth, wallThickness);
+			wallMeshHorizontal.needsUpdate = true;
 		}
 
-		// Handle vertical wall textures (left and right)
 		if (wallMeshVertical) {
 			wallMeshVertical.wrapS = wallMeshVertical.wrapT = THREE.RepeatWrapping;
-
-			// Set a consistent real-world scale
-			const textureScale = 1; // How many texture repeats per unit
-
-			// Height is much larger than width for vertical walls
-			// We want the texture to repeat naturally across the height
-			wallMeshVertical.repeat.set(0.5 * textureScale, viewportHeight * textureScale);
+			wallMeshVertical.repeat.set(wallThickness, viewportHeight);
+			wallMeshVertical.needsUpdate = true;
 		}
 
-		// Handle background texture
-		if (backgroundMesh) {
-			backgroundMesh.wrapS = backgroundMesh.wrapT = THREE.RepeatWrapping;
-
-			// Set a consistent scale for the background
-			// This should match the aspect ratio of your viewport
-			backgroundMesh.repeat.set(
-				1, // Single repeat horizontally
-				1 // Single repeat vertically
-			);
+		for (const bg of [backgroundMeshDiamond, backgroundMeshHerringbone]) {
+			bg.wrapS = bg.wrapT = THREE.RepeatWrapping;
+			bg.repeat.set(viewportWidth, viewportHeight);
+			bg.needsUpdate = true;
 		}
-	}, [wallMeshHorizontal, wallMeshVertical, backgroundMesh, viewportHeight, viewportWidth]);
+	}, [wallMeshHorizontal, wallMeshVertical, backgroundMeshDiamond, backgroundMeshHerringbone, viewportHeight, viewportWidth]);
 
 	const wallMetalness = 0.2;
 	const wallRoughness = 0.5;
@@ -77,27 +72,27 @@ const Thing: React.FC<DiceBoxContainerProps> = ({ }) => {
 			{/* Top Wall */}
 			<mesh position={[0, (viewportHeight - wallThickness) / 2, 0.5]}>
 				<boxGeometry attach='geometry' args={[viewportWidth, 0.5, wallThickness]} />
-				<meshStandardMaterial map={wallMeshHorizontal} metalness={wallMetalness} roughness={wallRoughness} />
+				<meshStandardMaterial map={wallMeshHorizontal} color={wallColor} metalness={wallMetalness} roughness={wallRoughness} />
 			</mesh>
 			{/* Left Wall */}
 			<mesh position={[-(viewportWidth - wallThickness) / 2, 0, 0.5]}>
 				<boxGeometry attach='geometry' args={[0.5, viewportHeight, wallThickness]} />
-				<meshStandardMaterial map={wallMeshVertical} metalness={wallMetalness} roughness={wallRoughness} />
+				<meshStandardMaterial map={wallMeshVertical} color={wallColor} metalness={wallMetalness} roughness={wallRoughness} />
 			</mesh>
 			{/* Right Wall */}
 			<mesh position={[(viewportWidth - wallThickness) / 2, 0, 0.5]}>
 				<boxGeometry attach='geometry' args={[0.5, viewportHeight, wallThickness]} />
-				<meshStandardMaterial map={wallMeshVertical} metalness={wallMetalness} roughness={wallRoughness} />
+				<meshStandardMaterial map={wallMeshVertical} color={wallColor} metalness={wallMetalness} roughness={wallRoughness} />
 			</mesh>
 			{/* Bottom Wall */}
 			<mesh position={[0, -(viewportHeight - wallThickness) / 2, 0.5]}>
 				<boxGeometry attach='geometry' args={[viewportWidth, 0.5, wallThickness]} />
-				<meshStandardMaterial map={wallMeshHorizontal} metalness={wallMetalness} roughness={wallRoughness} />
+				<meshStandardMaterial map={wallMeshHorizontal} color={wallColor} metalness={wallMetalness} roughness={wallRoughness} />
 			</mesh>
 			{/* Background */}
 			<mesh ref={ref as any} scale={[viewportWidth, viewportHeight, 1]}>
 				<boxGeometry attach='geometry' args={[1, 1, 0.1]} />
-				<meshStandardMaterial map={backgroundMesh} roughness={0.7} metalness={0.8} />
+				<meshStandardMaterial map={backgroundMesh} color={backgroundColor} roughness={0.7} metalness={0.8} />
 			</mesh>
 		</group>
 	);
@@ -109,7 +104,7 @@ interface DiceAppProps {
 
 export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 	console.log('Dice-App Rendering');
-	const { size } = useThree();
+	const { size, viewport } = useThree();
 	console.debug('🚀 ~ Diceapp ~ size:', size);
 
 	const [isRotated, setIsRotated] = useState(false);
@@ -170,6 +165,17 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 	// True only once the flip animation has fully settled on the config side
 	const configSlide = isRotated && !isZoomedOut;
 
+	// Dynamically compute distanceFactor so the HTML overlay always fills the 3D camera viewport.
+	// From the drei Html source, screen height = div_h × (htmlScale × df/400) × (fov_css / (camZ - objZ))
+	// where fov_css = projectionMatrix[5] × heightHalf = (camZ × 2 / viewport.height) × (size.height / 2).
+	// Setting screen_h = size.height and solving for df:
+	//   df = 400 × (camZ - objZ) × viewport.height / (htmlScale × camZ × size.height)
+	// distanceFactor is INVERSELY proportional to size.height.
+	const htmlScale = 0.4;
+	const cameraZ = 10;
+	const frontHtmlZ = 0.2;
+	const dynamicDistanceFactor = 400 * (cameraZ - frontHtmlZ) * viewport.height / (htmlScale * cameraZ * size.height);
+
 	const toggleShowDiceBox = (value?: React.SetStateAction<boolean> | undefined) => {
 		const newValue = value !== undefined ?
 			(typeof value === 'function' ? (value as Function)(showDiceBox) : value) :
@@ -202,7 +208,7 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 
 			{/* DiceBox Component (frontside) */}
 			{showDiceBox && diceBoxMounted && !isRotated && (
-				<Html transform occlude distanceFactor={10} scale={[0.4, 0.4, 1]} rotation={[0, 0, 0]} position={[0, 0, 0.2]}>
+				<Html transform occlude distanceFactor={dynamicDistanceFactor} scale={[0.4, 0.4, 1]} rotation={[0, 0, 0]} position={[0, 0, 0.2]}>
 					<div
 						style={{
 							width: size.width,
@@ -222,7 +228,7 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 
 			{/* Configuration Panel (backside) */}
 			{showConfiguration && (
-				<Html transform occlude distanceFactor={10} scale={[0.4, 0.4, 1]} rotation={[0, Math.PI, 0]} position={[0, 0, -0.1]}>
+				<Html transform occlude distanceFactor={dynamicDistanceFactor} scale={[0.4, 0.4, 1]} rotation={[0, Math.PI, 0]} position={[0, 0, -0.1]}>
 					<div style={{ width: size.width, height: size.height, overflow: 'hidden' }}>
 						<div
 							style={{
@@ -233,7 +239,7 @@ export const DiceApp: React.FC<DiceAppProps> = ({ configuration }) => {
 							}}
 						>
 							<MantineProvider defaultColorScheme='auto'>
-								<Configuration toggleShowDiceBox={toggleCamera} />
+								<Configuration toggleShowDiceBox={toggleCamera} configuration={configuration} />
 							</MantineProvider>
 						</div>
 					</div>
