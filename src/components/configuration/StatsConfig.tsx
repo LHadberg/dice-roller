@@ -3,6 +3,7 @@ import React from 'react';
 import { Group, Stack, Text, ActionIcon, Paper } from '@mantine/core';
 import { IconPlus, IconMinus } from '@tabler/icons-react';
 import { Stats } from '../../types/types';
+import { useTranslation } from 'react-i18next';
 
 interface StatsConfigProps {
   stats: Stats;
@@ -14,6 +15,8 @@ const calculateModifier = (value: number): number => {
 };
 
 const StatsConfig: React.FC<StatsConfigProps> = ({ stats, onUpdate }) => {
+  const { t } = useTranslation();
+
   const handleStatChange = (statKey: keyof Stats, change: number) => {
     const newValue = stats[statKey].value + change;
     if (newValue >= 0 && newValue <= 20) {
@@ -30,17 +33,19 @@ const StatsConfig: React.FC<StatsConfigProps> = ({ stats, onUpdate }) => {
 
   return (
     <Stack gap="md">
-      <Text size="xl" fw={700}>Character Stats</Text>
+      <Text size="xl" fw={700}>{t('stats.title')}</Text>
       {(Object.keys(stats) as Array<keyof Stats>).map((statKey) => (
         <Paper key={statKey} p="md" withBorder>
           <Group justify="space-between" align="center">
             <div>
-              <Text fw={500} size="lg" style={{ textTransform: 'capitalize' }}>
-                {statKey}
+              <Text fw={500} size="lg">
+                {t(`statNames.${statKey}`)}
               </Text>
               <Text size="sm" c="dimmed">
-                {/* TODO: Add localization */}
-                Value: {stats[statKey].value} (Modifier: {stats[statKey].modifier >= 0 ? '+' : ''}{stats[statKey].modifier})
+                {t('stats.valueModifier', {
+                  value: stats[statKey].value,
+                  modifier: `${stats[statKey].modifier >= 0 ? '+' : ''}${stats[statKey].modifier}`,
+                })}
               </Text>
             </div>
             <Group>

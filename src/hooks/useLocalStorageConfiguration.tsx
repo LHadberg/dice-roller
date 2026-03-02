@@ -49,7 +49,9 @@ export const useLocalStorageConfiguration = (defaults: DefaultConfigs): LocalSto
 		setStats(loadFromStorage(STORAGE_KEYS.STATS, defaults.defaultStats));
 		setActions(loadFromStorage(STORAGE_KEYS.ACTIONS, defaults.defaultActions));
 		setPhysicsConfig(loadFromStorage(STORAGE_KEYS.PHYSICS, defaults.defaultPhysicsConfig));
-		setVisualConfig(loadFromStorage(STORAGE_KEYS.VISUAL, defaults.defaultVisualConfig));
+		// Merge defaults so newly-added fields are present even when old data is stored.
+		const storedVisual = loadFromStorage(STORAGE_KEYS.VISUAL, defaults.defaultVisualConfig);
+		setVisualConfig({ ...defaults.defaultVisualConfig, ...storedVisual });
 	}, [defaults]);
 
 	const saveToStorage = <T,>(key: string, value: T) => {

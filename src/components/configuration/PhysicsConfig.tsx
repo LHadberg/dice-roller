@@ -2,6 +2,7 @@
 import React from 'react';
 import { Slider, Stack, Text } from '@mantine/core';
 import { DiceBoxConfig } from '../../types/types';
+import { useTranslation } from 'react-i18next';
 
 interface PhysicsConfigProps {
   config: DiceBoxConfig;
@@ -9,6 +10,8 @@ interface PhysicsConfigProps {
 }
 
 const PhysicsConfig: React.FC<PhysicsConfigProps> = ({ config, onUpdate }) => {
+  const { t } = useTranslation();
+
   const handleUpdate = (key: keyof DiceBoxConfig, value: number) => {
     onUpdate({
       ...config,
@@ -18,12 +21,11 @@ const PhysicsConfig: React.FC<PhysicsConfigProps> = ({ config, onUpdate }) => {
 
   return (
     <Stack gap="md">
-      {/* TODO Parametize labels for localization */}
       <Text size="xl" fw={700}>
-        Physics Configuration
+        {t('physics.title')}
       </Text>
       <Stack gap="xs">
-        <Text>Gravity</Text>
+        <Text>{t('physics.gravity')}</Text>
         <Slider
           value={config.gravity}
           onChange={(value) => handleUpdate('gravity', value)}
@@ -38,7 +40,7 @@ const PhysicsConfig: React.FC<PhysicsConfigProps> = ({ config, onUpdate }) => {
         />
       </Stack>
       <Stack gap="xs">
-        <Text>Mass</Text>
+        <Text>{t('physics.mass')}</Text>
         <Slider
           value={config.mass}
           onChange={(value) => handleUpdate('mass', value)}
@@ -46,14 +48,14 @@ const PhysicsConfig: React.FC<PhysicsConfigProps> = ({ config, onUpdate }) => {
           max={2}
           step={0.1}
           marks={[
-            { value: 0.1, label: 'Light' },
-            { value: 1, label: 'Normal' },
-            { value: 2, label: 'Heavy' },
+            { value: 0.1, label: t('physics.massLight') },
+            { value: 1, label: t('physics.massNormal') },
+            { value: 2, label: t('physics.massHeavy') },
           ]}
         />
       </Stack>
       <Stack gap="xs">
-        <Text>Friction</Text>
+        <Text>{t('physics.friction')}</Text>
         <Slider
           value={config.friction}
           onChange={(value) => handleUpdate('friction', value)}
@@ -61,9 +63,9 @@ const PhysicsConfig: React.FC<PhysicsConfigProps> = ({ config, onUpdate }) => {
           max={1}
           step={0.1}
           marks={[
-            { value: 0, label: 'None' },
-            { value: 0.5, label: 'Medium' },
-            { value: 1, label: 'High' },
+            { value: 0, label: t('physics.frictionNone') },
+            { value: 0.5, label: t('physics.frictionMedium') },
+            { value: 1, label: t('physics.frictionHigh') },
           ]}
         />
       </Stack>

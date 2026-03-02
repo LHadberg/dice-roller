@@ -23,14 +23,18 @@ export interface VisualConfig {
 	diceColor: string;
 	textColor: string;
 	trayColor: string;
+	wallColor: string;
+	backgroundColor: string;
+	backgroundStyle: string;
 }
 
 export interface DiceResult {
 	qty: number;
 	value: number;
-	rolls: Array<{ dieType: string }>;
+	rolls: Array<{ dieType: string; value?: number }>;
 	values?: number[];
 	groupId?: string;
+	damageType?: string;
 }
 
 export interface Stat {
@@ -58,6 +62,7 @@ export interface Action {
 	damageDice: {
 		quantity: number;
 		dieType: keyof DiceSelections;
+		damageType?: string;
 	}[];
 }
 

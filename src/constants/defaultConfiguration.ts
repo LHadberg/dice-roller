@@ -26,6 +26,9 @@ const defaultVisualConfig = {
   diceColor: '#ffffff',
   textColor: '#000000',
   trayColor: '#1a1a1a',
+  wallColor: '#8b7355',
+  backgroundColor: '#2d4a2d',
+  backgroundStyle: 'diamond',
 };
 
 export const defaultConfigs = {
