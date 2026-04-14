@@ -125,7 +125,6 @@
   right: 0;
   bottom: 0;
   z-index: 20;
-  background: rgba(255, 255, 255, 0.8);
 }
 
 /* Hit confirmation styles */
@@ -168,7 +167,7 @@
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 2rem);
-  max-width: 450px;
+  max-width: 500px;
   padding: 1rem;
   border-radius: 8px;
 }
@@ -192,9 +191,6 @@
   border-color: rgba(255, 255, 255, 0.1);
 }
 
-:global([data-mantine-color-scheme="dark"]) .loader {
-  background: rgba(26, 27, 30, 0.8);
-}
 
 :global([data-mantine-color-scheme="dark"]) .header {
   border-bottom-color: rgba(255, 255, 255, 0.1);

@@ -534,9 +534,12 @@ const DiceBoxComponent: React.FC<DiceBoxProps> = ({
                 opened={showActions}
                 onClose={() => setShowActions(false)}
                 position="right"
-                size="md"
                 title={t('diceBox.actionsDrawerTitle')}
                 withinPortal={false}
+                offset={16}
+                radius="md"
+                size={500}
+                styles={{ content: { height: 'auto' } }}
             >
                 <Stack gap="sm" p="md">
                     {actions.length === 0 && (
