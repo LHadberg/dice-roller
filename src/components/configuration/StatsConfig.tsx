@@ -37,17 +37,15 @@ const StatsConfig: React.FC<StatsConfigProps> = ({ stats, onUpdate }) => {
       {(Object.keys(stats) as Array<keyof Stats>).map((statKey) => (
         <Paper key={statKey} p="md" withBorder>
           <Group justify="space-between" align="center">
-            <div>
-              <Text fw={500} size="lg">
-                {t(`statNames.${statKey}`)}
-              </Text>
-              <Text size="sm" c="dimmed">
-                {t('stats.valueModifier', {
-                  value: stats[statKey].value,
-                  modifier: `${stats[statKey].modifier >= 0 ? '+' : ''}${stats[statKey].modifier}`,
-                })}
-              </Text>
-            </div>
+            <Text fw={500} size="lg">
+              {t(`statNames.${statKey}`)}
+            </Text>
+            <Text size="sm" c="dimmed">
+              {t('stats.valueModifier', {
+                value: stats[statKey].value,
+                modifier: `${stats[statKey].modifier >= 0 ? '+' : ''}${stats[statKey].modifier}`,
+              })}
+            </Text>
             <Group>
               <ActionIcon
                 variant="light"

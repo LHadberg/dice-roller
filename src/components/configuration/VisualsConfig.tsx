@@ -1,22 +1,24 @@
 // src/components/configuration/VisualsConfig.tsx
 import React, { useMemo } from 'react';
-import { ActionIcon, ColorInput, Group, SegmentedControl, Stack, Text, Tooltip, useMantineColorScheme } from '@mantine/core';
+import { ActionIcon, ColorInput, Group, SegmentedControl, Slider, Stack, Text, Tooltip, useMantineColorScheme } from '@mantine/core';
 import { IconRefresh } from '@tabler/icons-react';
 import { VisualConfig } from '../../types/types';
 import { defaultConfigs } from '../../constants/defaultConfiguration';
 import { useTranslation } from 'react-i18next';
-import wallSvgRaw from '../../assets/textures/wall/geometric.svg?raw';
+import wallGeometricSvgRaw from '../../assets/textures/wall/geometric.svg?raw';
 import diamondSvgRaw from '../../assets/textures/background/diamond.svg?raw';
-import herringboneSvgRaw from '../../assets/textures/background/herringbone.svg?raw';
+import linenSvgRaw from '../../assets/textures/background/linen.svg?raw';
 
 const { defaultVisualConfig } = defaultConfigs;
 
-// Base colors of each SVG — the mid-tone around which the rest of the palette is built.
-const WALL_SVG_BASE = '#c49050';
+const WALL_STYLES: Record<string, { svgRaw: string; baseColor: string; label: string; tileW: number; tileH: number }> = {
+  geometric: { svgRaw: wallGeometricSvgRaw, baseColor: '#c49050', label: 'Geometric', tileW: 64, tileH: 64 },
+  linen: { svgRaw: linenSvgRaw, baseColor: '#b8a080', label: 'Linen', tileW: 16, tileH: 16 },
+};
 
 const BACKGROUND_STYLES: Record<string, { svgRaw: string; baseColor: string; label: string; tileW: number; tileH: number }> = {
-  diamond:     { svgRaw: diamondSvgRaw,     baseColor: '#a07848', label: 'Diamond',     tileW: 64, tileH: 64 },
-  herringbone: { svgRaw: herringboneSvgRaw, baseColor: '#c49050', label: 'Herringbone', tileW: 48, tileH: 64 },
+  diamond: { svgRaw: diamondSvgRaw, baseColor: '#a07848', label: 'Diamond', tileW: 64, tileH: 64 },
+  linen: { svgRaw: linenSvgRaw, baseColor: '#b8a080', label: 'Linen', tileW: 16, tileH: 16 },
 };
 
 function hexToHsl(hex: string): [number, number, number] {
@@ -61,7 +63,7 @@ function recolorSvg(svgRaw: string, chosenHex: string, baseHex: string): string 
   });
 }
 
-const TexturePreview: React.FC<{ svgRaw: string; color: string; baseColor: string; tileW: number; tileH: number }> = ({ svgRaw, color, baseColor, tileW, tileH }) => {
+const TexturePreview: React.FC<{ svgRaw: string; color: string; baseColor: string; tileW: number; tileH: number; repeat?: number }> = ({ svgRaw, color, baseColor, tileW, tileH, repeat = 1 }) => {
   const dataUrl = useMemo(() => {
     const svg = /^#[0-9a-fA-F]{6}$/.test(color) ? recolorSvg(svgRaw, color, baseColor) : svgRaw;
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -71,10 +73,11 @@ const TexturePreview: React.FC<{ svgRaw: string; color: string; baseColor: strin
     <div style={{
       width: '100%',
       height: 64,
+      flexShrink: 0,
       borderRadius: 6,
       backgroundImage: `url("${dataUrl}")`,
       backgroundRepeat: 'repeat',
-      backgroundSize: `${tileW}px ${tileH}px`,
+      backgroundSize: `${tileW / repeat}px ${tileH / repeat}px`,
     }} />
   );
 };
@@ -90,20 +93,17 @@ const VisualsConfig: React.FC<VisualsConfigProps> = ({ config, onUpdate }) => {
 
   return (
     <Stack gap="md">
-      <div>
-        <Text size="sm" fw={500} mb={4}>{t('visuals.uiTheme')}</Text>
-        <SegmentedControl
-          fullWidth
-          value={colorScheme}
-          onChange={(value) => setColorScheme(value as 'light' | 'dark' | 'auto')}
-          data={[
-            { value: 'light', label: t('visuals.light') },
-            { value: 'dark', label: t('visuals.dark') },
-            { value: 'auto', label: t('visuals.auto') },
-          ]}
-        />
-      </div>
-
+      <Text size="sm" fw={500} mb={4}>{t('visuals.uiTheme')}</Text>
+      <SegmentedControl
+        fullWidth
+        value={colorScheme}
+        onChange={(value) => setColorScheme(value as 'light' | 'dark' | 'auto')}
+        data={[
+          { value: 'light', label: t('visuals.light') },
+          { value: 'dark', label: t('visuals.dark') },
+          { value: 'auto', label: t('visuals.auto') },
+        ]}
+      />
       <Text size="xl" fw={700}>
         {t('visuals.title')}
       </Text>
@@ -122,6 +122,27 @@ const VisualsConfig: React.FC<VisualsConfigProps> = ({ config, onUpdate }) => {
           </ActionIcon>
         </Tooltip>
       </Group>
+      <div>
+        <Text size="sm" fw={500} mb={4}>{t('visuals.wallStyle')}</Text>
+        <SegmentedControl
+          fullWidth
+          value={config.wallStyle}
+          onChange={(value) => onUpdate({ ...config, wallStyle: value })}
+          data={Object.entries(WALL_STYLES).map(([value, { label }]) => ({ value, label }))}
+        />
+      </div>
+      <div>
+        <Text size="sm" fw={500} mb={4}>{t('visuals.wallRepeat')}</Text>
+        <Text size="xs" c="dimmed" mb={8}>{t('visuals.wallRepeatDescription')}</Text>
+        <Slider
+          min={1}
+          max={8}
+          step={1}
+          value={config.wallRepeat}
+          onChange={(value) => onUpdate({ ...config, wallRepeat: value })}
+          marks={[1, 2, 4, 8].map((v) => ({ value: v, label: String(v) }))}
+        />
+      </div>
       <Group align="flex-end" gap="xs">
         <ColorInput
           style={{ flex: 1 }}
@@ -137,7 +158,10 @@ const VisualsConfig: React.FC<VisualsConfigProps> = ({ config, onUpdate }) => {
           </ActionIcon>
         </Tooltip>
       </Group>
-      <TexturePreview svgRaw={wallSvgRaw} color={config.wallColor} baseColor={WALL_SVG_BASE} tileW={64} tileH={64} />
+      {(() => {
+        const style = WALL_STYLES[config.wallStyle] ?? WALL_STYLES.geometric;
+        return <TexturePreview svgRaw={style.svgRaw} color={config.wallColor} baseColor={style.baseColor} tileW={style.tileW} tileH={style.tileH} repeat={config.wallRepeat} />;
+      })()}
       <div>
         <Text size="sm" fw={500} mb={4}>{t('visuals.backgroundStyle')}</Text>
         <SegmentedControl
@@ -145,6 +169,18 @@ const VisualsConfig: React.FC<VisualsConfigProps> = ({ config, onUpdate }) => {
           value={config.backgroundStyle}
           onChange={(value) => onUpdate({ ...config, backgroundStyle: value })}
           data={Object.entries(BACKGROUND_STYLES).map(([value, { label }]) => ({ value, label }))}
+        />
+      </div>
+      <div>
+        <Text size="sm" fw={500} mb={4}>{t('visuals.backgroundRepeat')}</Text>
+        <Text size="xs" c="dimmed" mb={8}>{t('visuals.backgroundRepeatDescription')}</Text>
+        <Slider
+          min={1}
+          max={8}
+          step={1}
+          value={config.backgroundRepeat}
+          onChange={(value) => onUpdate({ ...config, backgroundRepeat: value })}
+          marks={[1, 2, 4, 8].map((v) => ({ value: v, label: String(v) }))}
         />
       </div>
       <Group align="flex-end" gap="xs">
@@ -164,7 +200,7 @@ const VisualsConfig: React.FC<VisualsConfigProps> = ({ config, onUpdate }) => {
       </Group>
       {(() => {
         const style = BACKGROUND_STYLES[config.backgroundStyle] ?? BACKGROUND_STYLES.diamond;
-        return <TexturePreview svgRaw={style.svgRaw} color={config.backgroundColor} baseColor={style.baseColor} tileW={style.tileW} tileH={style.tileH} />;
+        return <TexturePreview svgRaw={style.svgRaw} color={config.backgroundColor} baseColor={style.baseColor} tileW={style.tileW} tileH={style.tileH} repeat={config.backgroundRepeat} />;
       })()}
     </Stack>
   );
